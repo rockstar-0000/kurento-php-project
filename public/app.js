@@ -354,14 +354,14 @@ function clickedRecordingBtn() {
 
 		$('#buttonRecord').removeClass("btn-danger");
 		$('#buttonRecord').addClass("btn-success");
-		$('#buttonRecord').attr("value", "Stop Recording");
+		$('#buttonRecord').attr("value", "Start Recording");
 	}
 	else {
 		startRecording();
 		
 		$('#buttonRecord').removeClass("btn-success");
 		$('#buttonRecord').addClass("btn-danger");
-		$('#buttonRecord').attr("value", "Start Recording");
+		$('#buttonRecord').attr("value", "Stop Recording");
 	}
 	isRecording = !isRecording;
 }
