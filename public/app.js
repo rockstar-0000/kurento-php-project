@@ -7,14 +7,6 @@ var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
 
-// var openvidu = new OpenVidu("https://192.168.136.161:4333/", "MY_SCRETE");
-// var properties = {
-// 	recordingMode: 'MANUAL', // RecordingMode.ALWAYS for automatic recording
-// 	defaultOutputMode: 'COMPOSED'
-// };
-// var mySession = openvidu.createSession(properties);
-/* OPENVIDU METHODS */
-
 function joinSession() {
 	getToken((token) => {
 
@@ -129,8 +121,8 @@ function joinSession() {
 			console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
 			var videoElement;
 			// $("[id*="+toggleGroup+"]")
-			if ($("[id*="+event.connection.connectionId+"]")[0]) {
-				videoElement = $("[id*="+event.connection.connectionId+"]")[0];
+			if ($("[id*=" + event.connection.connectionId + "]")[0]) {
+				videoElement = $("[id*=" + event.connection.connectionId + "]")[0];
 			}
 			else {
 				videoElement = $("[id*=local]")[0];
@@ -356,30 +348,35 @@ function cleanSessionView() {
 }
 
 function clickedRecordingBtn() {
+	console.log(">>>>>>clickedRecordingBtn", isRecording);
+	if (isRecording) {
+		stopRecording();
 
-	// if (isRecording) {
-	// 	stopRecording();
+		$('#buttonRecord').removeClass("btn-danger");
+		$('#buttonRecord').addClass("btn-success");
+		$('#buttonRecord').attr("value", "Stop Recording");
+	}
+	else {
+		startRecording();
+		
+		$('#buttonRecord').removeClass("btn-success");
+		$('#buttonRecord').addClass("btn-danger");
+		$('#buttonRecord').attr("value", "Start Recording");
+	}
+	isRecording = !isRecording;
+}
 
-	// 	$('#buttonRecord').removeClass("btn-success");
-	// 	$('#buttonRecord').addClass("btn-danger");
-	// 	$('#buttonRecord').attr("value", "Stop Recording");
-	// }
-	// else {
-	// 	startRecording();
+function startRecording() {
 
-	// 	$('#buttonRecord').removeClass("btn-danger");
-	// 	$('#buttonRecord').addClass("btn-success");
-	// 	$('#buttonRecord').attr("value", "Start Recording");
-	// }
-	// isRecording = !isRecording;
-
+	console.log(">>>>>>>>>startRecording", session);
+	var sessionId = session.options.sessionId;
 
 	$.ajax({
+		type: 'POST',
 		url: 'https://192.168.136.161:4443/api/recordings/start',
-		type: 'post',
-		data: JSON.stringify({ session: sessionName, "outputMode": "COMPOSED" }),
+		data: JSON.stringify({ session: sessionId, "outputMode": "COMPOSED", "recordingLayout": "CUSTOM" }),
 		headers: {
-			Authorization: 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
+			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
 			'Content-Type': 'application/json',
 		},
 		dataType: 'json',
@@ -389,21 +386,21 @@ function clickedRecordingBtn() {
 	});
 }
 
-function startRecording() {
-
-	var sessionId = mySession.getSessionId();
-	openvidu.startRecording(sessionId, {
-		outputMode: Recording.OutputMode.COMPOSED,
-		recordingLayout: RecordingLayout.BEST_FIT
-	})
-		.then(response => recording = response)
-		.catch(error => console.error(error));
-}
-
 function stopRecording() {
-	openvidu.stopRecording(recording.id)
-		.then(response => recording = response)
-		.catch(error => console.error(error));
+	console.log(">>>>>>>>>stopRecording", session);
+	var sessionId = session.options.sessionId;
+
+	$.ajax({
+		type: 'POST',
+		url: 'https://192.168.136.161:4443/api/recordings/stop/'+sessionId,
+		headers: {
+			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
+			'Content-Type': 'application/json',
+		},
+		success: function (data) {
+			console.log(data);
+		}
+	});
 }
 
 logIn();
