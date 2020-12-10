@@ -212,10 +212,12 @@ a:hover .demo-logo {
 
 #join {
 	max-width: 700px;
-    margin: auto;
+	margin: auto;
+	margin-top: 20vh;
 }
 
 #session-header {
+	margin-top: 20px;
 	margin-bottom: 20px;
 }
 
@@ -235,15 +237,16 @@ a:hover .demo-logo {
 #video-container video {
 	position: relative;
 	float: left;
-	width: 50%;
+	width: 100%;
 	cursor: pointer;
+	margin: 3px 0px;
+    border: 1px solid red;
 }
 
 #video-container div {
 	float: left;
-	width: 50%;
+	width: 100%;
 	position: relative;
-	margin-left: -50%;
 }
 
 #video-container p {
@@ -344,6 +347,17 @@ table i {
 	font-weight: bold;
 }
 
+#session {
+	position: relative;
+
+}
+
+#video-container {
+	position: absolute;
+	right: 0;
+	height: 80vh;
+    overflow: auto;
+}
 
 /* xs ans md screen resolutions*/
 

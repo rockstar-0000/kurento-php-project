@@ -1,18 +1,34 @@
 var OV;
 var session;
 
-var sessionName;	// Name of the video session the user will connect to
+var sessionName = "room";	// Name of the video session the user will connect to
+var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
+var isRecording = false;
+var recording;
 
-
+// var openvidu = new OpenVidu("https://192.168.136.161:4333/", "MY_SCRETE");
+// var properties = {
+// 	recordingMode: 'MANUAL', // RecordingMode.ALWAYS for automatic recording
+// 	defaultOutputMode: 'COMPOSED'
+// };
+// var mySession = openvidu.createSession(properties);
 /* OPENVIDU METHODS */
 
 function joinSession() {
 	getToken((token) => {
 
+		console.log(">>>>>token", token);
+
 		// --- 1) Get an OpenVidu object ---
 
 		OV = new OpenVidu();
+		OV.setAdvancedConfiguration({
+			publisherSpeakingEventsOptions: {
+				interval: 100,   // Frequency of the polling of audio streams in ms (default 100)
+				threshold: -50  // Threshold volume in dB (default -50)
+			}
+		});
 
 		// --- 2) Init a session ---
 
@@ -43,14 +59,15 @@ function joinSession() {
 
 		// --- 4) Connect to the session passing the retrieved token and some more data from
 		//        the client (in this case a JSON with the nickname chosen by the user) ---
-		
-		var nickName = $("#nickName").val();
+
+		// var nickName = $("#nickName").val();
 		session.connect(token, { clientData: nickName })
 			.then(() => {
 
 				// --- 5) Set page layout for active call ---
 
-				var userName = $("#user").val();
+				// var userName = $("#user").val();
+				var userName = "publisher1";
 				$('#session-title').text(sessionName);
 				$('#join').hide();
 				$('#session').show();
@@ -89,6 +106,10 @@ function joinSession() {
 						$(event.element).prop('muted', true); // Mute local video
 					});
 
+					// publisher.on('streamAudioVolumeChange', (event) => {
+					// 	console.log('>>>>>Publisher audio volume event ', event);
+					// 	console.log('>>>>>Publisher audio volume change from ' + event.value.oldValue + ' to' + event.value.newValue);
+					// });
 
 					// --- 8) Publish your stream ---
 
@@ -102,6 +123,35 @@ function joinSession() {
 			.catch(error => {
 				console.warn('There was an error connecting to the session:', error.code, error.message);
 			});
+
+		session.on('publisherStartSpeaking', (event) => {
+			console.log('>>>>>publisherStartSpeaking event:', event);
+			console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
+			var videoElement;
+			// $("[id*="+toggleGroup+"]")
+			if ($("[id*="+event.connection.connectionId+"]")[0]) {
+				videoElement = $("[id*="+event.connection.connectionId+"]")[0];
+			}
+			else {
+				videoElement = $("[id*=local]")[0];
+			}
+
+			console.log('>>>>>Publisher Speak Element', videoElement);
+
+			var mainVideo = $('#main-video video').get(0);
+			if (mainVideo.srcObject !== videoElement.srcObject) {
+				$('#main-video').fadeOut("fast", () => {
+					// $('#main-video p.nickName').html(clientData);
+					// $('#main-video p.userName').html(serverData);
+					mainVideo.srcObject = videoElement.srcObject;
+					$('#main-video').fadeIn("fast");
+				});
+			}
+		});
+
+		session.on('publisherStopSpeaking', (event) => {
+			console.log('>>>>>Publisher ' + event.connection.connectionId + ' stop speaking');
+		});
 	});
 
 	return false;
@@ -128,42 +178,45 @@ function leaveSession() {
 /* APPLICATION REST METHODS */
 
 function logIn() {
-	var user = $("#user").val(); // Username
-	var pass = $("#pass").val(); // Password
+	// var user = $("#user").val(); // Username
+	// var pass = $("#pass").val(); // Password
+	var user = "publisher1"; // Username
+	var pass = "pass"; // Password
 
 	httpPostRequest(
 		'api-login/login',
-		{user: user, pass: pass},
+		{ user: user, pass: pass },
 		'Login WRONG',
 		(response) => {
 			$("#name-user").text(user);
 			$("#not-logged").hide();
 			$("#logged").show();
 			// Random nickName and session
-			$("#sessionName").val("Session " + Math.floor(Math.random() * 10));
-			$("#nickName").val("Participant " + Math.floor(Math.random() * 100));
+			// $("#sessionName").val("Session " + Math.floor(Math.random() * 10));
+			// $("#sessionName").val("room");
+			// $("#nickName").val("Participant " + Math.floor(Math.random() * 100));
 		}
 	);
 }
 
 function logOut() {
-	httpPostRequest(
-		'api-login/logout',
-		{},
-		'Logout WRONG',
-		(response) => {
-			$("#not-logged").show();
-			$("#logged").hide();
-		}
-	);
+	// httpPostRequest(
+	// 	'api-login/logout',
+	// 	{},
+	// 	'Logout WRONG',
+	// 	(response) => {
+	// 		$("#not-logged").show();
+	// 		$("#logged").hide();
+	// 	}
+	// );
 }
 
 function getToken(callback) {
-	sessionName = $("#sessionName").val(); // Video-call chosen by the user
+	// sessionName = $("#sessionName").val(); // Video-call chosen by the user
 
 	httpPostRequest(
 		'api-sessions/get-token',
-		{sessionName: sessionName},
+		{ sessionName: sessionName },
 		'Request of TOKEN gone WRONG:',
 		(response) => {
 			token = response[0]; // Get token from response
@@ -176,8 +229,8 @@ function getToken(callback) {
 function removeUser() {
 	httpPostRequest(
 		'api-sessions/remove-user',
-		{sessionName: sessionName, token: token},
-		'User couldn\'t be removed from session', 
+		{ sessionName: sessionName, token: token },
+		'User couldn\'t be removed from session',
 		(response) => {
 			console.warn("You have been removed from session " + sessionName);
 		}
@@ -225,20 +278,26 @@ function appendUserData(videoElement, connection) {
 	var clientData;
 	var serverData;
 	var nodeId;
+	var userTypeName;
+
+	console.log(">>>>>appendUserData: videoElement", videoElement);
+	console.log(">>>>>appendUserData: connection", connection);
 	if (connection.nickName) { // Appending local video data
 		clientData = connection.nickName;
 		serverData = connection.userName;
 		nodeId = 'main-videodata';
+		userTypeName = 'Local';
 	} else {
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
 		nodeId = connection.connectionId;
+		userTypeName = 'Remote';
 	}
 	var dataNode = document.createElement('div');
 	dataNode.className = "data-node";
 	dataNode.id = "data-" + nodeId;
-	dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p><p class='userName'>" + serverData + "</p>";
-	videoElement.parentNode.insertBefore(dataNode, videoElement.nextSibling);
+	// dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p><p class='userTypeName'>" + userTypeName + "</p>";
+	// videoElement.parentNode.append(dataNode, videoElement.nextSibling);	
 	addClickListener(videoElement, clientData, serverData);
 }
 
@@ -296,4 +355,57 @@ function cleanSessionView() {
 	$('#main-video video').css("background", "");
 }
 
+function clickedRecordingBtn() {
+
+	// if (isRecording) {
+	// 	stopRecording();
+
+	// 	$('#buttonRecord').removeClass("btn-success");
+	// 	$('#buttonRecord').addClass("btn-danger");
+	// 	$('#buttonRecord').attr("value", "Stop Recording");
+	// }
+	// else {
+	// 	startRecording();
+
+	// 	$('#buttonRecord').removeClass("btn-danger");
+	// 	$('#buttonRecord').addClass("btn-success");
+	// 	$('#buttonRecord').attr("value", "Start Recording");
+	// }
+	// isRecording = !isRecording;
+
+
+	$.ajax({
+		url: 'https://192.168.136.161:4443/api/recordings/start',
+		type: 'post',
+		data: JSON.stringify({ session: sessionName, "outputMode": "COMPOSED" }),
+		headers: {
+			Authorization: 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
+			'Content-Type': 'application/json',
+		},
+		dataType: 'json',
+		success: function (data) {
+			console.log(data);
+		}
+	});
+}
+
+function startRecording() {
+
+	var sessionId = mySession.getSessionId();
+	openvidu.startRecording(sessionId, {
+		outputMode: Recording.OutputMode.COMPOSED,
+		recordingLayout: RecordingLayout.BEST_FIT
+	})
+		.then(response => recording = response)
+		.catch(error => console.error(error));
+}
+
+function stopRecording() {
+	openvidu.stopRecording(recording.id)
+		.then(response => recording = response)
+		.catch(error => console.error(error));
+}
+
+logIn();
+joinSession();
 /* APPLICATION BROWSER METHODS */

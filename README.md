@@ -11,3 +11,6 @@ openvidu-js-node
 Visit [openvidu.io/docs/tutorials/openvidu-js-node/](http://openvidu.io/docs/tutorials/openvidu-js-node/)
 
 [OpenViduLogo]: https://secure.gravatar.com/avatar/5daba1d43042f2e4e85849733c8e5702?s=120
+
+npm install
+node server.js https://localhost:4443 MY_SECRET
