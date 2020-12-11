@@ -1,11 +1,19 @@
 var OV;
 var session;
-
+var debugMode = false;
+var mediaServerUrl;
 var sessionName = "room";	// Name of the video session the user will connect to
 var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
+
+if(debugMode) {
+	mediaServerUrl = "192.168.136.161:4443";
+}
+else {
+	mediaServerUrl = "kurento.videoqa.com:4443";
+}
 
 function joinSession() {
 	getToken((token) => {
@@ -367,14 +375,14 @@ function clickedRecordingBtn() {
 }
 
 function startRecording() {
-
-	console.log(">>>>>>>>>startRecording", session);
 	var sessionId = session.options.sessionId;
+	console.log(">>>>>>>>>startRecording", sessionId);
+	// var sessionId = sessionName;
 
 	$.ajax({
 		type: 'POST',
-		url: 'https://192.168.136.161:4443/api/recordings/start',
-		data: JSON.stringify({ session: sessionId, "outputMode": "COMPOSED", "recordingLayout": "CUSTOM" }),
+		url: 'https://'+mediaServerUrl+'/api/recordings/start',
+		data: JSON.stringify({ session: sessionId, "outputMode": "COMPOSED", "recordingLayout": "BEST_FIT" }),
 		headers: {
 			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
 			'Content-Type': 'application/json',
@@ -387,12 +395,13 @@ function startRecording() {
 }
 
 function stopRecording() {
-	console.log(">>>>>>>>>stopRecording", session);
 	var sessionId = session.options.sessionId;
+	console.log(">>>>>>>>>stopRecording", sessionId);
+	// var sessionId = sessionName;
 
 	$.ajax({
 		type: 'POST',
-		url: 'https://192.168.136.161:4443/api/recordings/stop/'+sessionId,
+		url: 'https://'+mediaServerUrl+'/api/recordings/stop/'+sessionId,
 		headers: {
 			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
 			'Content-Type': 'application/json',
