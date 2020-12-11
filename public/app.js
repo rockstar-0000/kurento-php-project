@@ -8,7 +8,7 @@ var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
 
-if(debugMode) {
+if (debugMode) {
 	mediaServerUrl = "192.168.136.161:4443";
 }
 else {
@@ -366,7 +366,7 @@ function clickedRecordingBtn() {
 	}
 	else {
 		startRecording();
-		
+
 		$('#buttonRecord').removeClass("btn-success");
 		$('#buttonRecord').addClass("btn-danger");
 		$('#buttonRecord').attr("value", "Stop Recording");
@@ -381,8 +381,8 @@ function startRecording() {
 
 	$.ajax({
 		type: 'POST',
-		url: 'https://'+mediaServerUrl+'/api/recordings/start',
-		data: JSON.stringify({ session: sessionId, "outputMode": "COMPOSED", "recordingLayout": "BEST_FIT" }),
+		url: 'https://' + mediaServerUrl + '/api/recordings/start',
+		data: JSON.stringify({ session: sessionId, "outputMode": "COMPOSED", "recordingLayout": "CUSTOM" }),
 		headers: {
 			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
 			'Content-Type': 'application/json',
@@ -401,7 +401,7 @@ function stopRecording() {
 
 	$.ajax({
 		type: 'POST',
-		url: 'https://'+mediaServerUrl+'/api/recordings/stop/'+sessionId,
+		url: 'https://' + mediaServerUrl + '/api/recordings/stop/' + sessionId,
 		headers: {
 			'Authorization': 'Basic ' + btoa('OPENVIDUAPP:MY_SECRET'),
 			'Content-Type': 'application/json',
@@ -412,6 +412,12 @@ function stopRecording() {
 	});
 }
 
+function updateUrl() {
+	var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + sessionName;
+	window.history.pushState({ path: refresh }, '', refresh);
+}
+
+updateUrl();
 logIn();
 joinSession();
 /* APPLICATION BROWSER METHODS */
