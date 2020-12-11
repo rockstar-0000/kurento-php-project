@@ -152,6 +152,26 @@ function joinSession() {
 		session.on('publisherStopSpeaking', (event) => {
 			console.log('>>>>>Publisher ' + event.connection.connectionId + ' stop speaking');
 		});
+
+		session.on('recordingStarted', (event) => {
+			console.log(">>>>>>>recordingStarted: ", event);
+
+			$('#buttonRecord').removeClass("btn-success");
+			$('#buttonRecord').addClass("btn-danger");
+			$('#buttonRecord').attr("value", "Stop Recording");
+			isRecording = true;
+			$("#buttonRecord").prop("disabled",false);
+		});
+
+		session.on('recordingStopped', (event) => {
+			console.log(">>>>>>recordingStopped: ", event);
+
+			$('#buttonRecord').removeClass("btn-danger");
+			$('#buttonRecord').addClass("btn-success");
+			$('#buttonRecord').attr("value", "Start Recording");
+			isRecording = false;
+			$("#buttonRecord").prop("disabled",false);
+		});
 	});
 
 	return false;
@@ -357,21 +377,13 @@ function cleanSessionView() {
 
 function clickedRecordingBtn() {
 	console.log(">>>>>>clickedRecordingBtn", isRecording);
+	$("#buttonRecord").prop("disabled",true);
 	if (isRecording) {
 		stopRecording();
-
-		$('#buttonRecord').removeClass("btn-danger");
-		$('#buttonRecord').addClass("btn-success");
-		$('#buttonRecord').attr("value", "Start Recording");
 	}
 	else {
 		startRecording();
-
-		$('#buttonRecord').removeClass("btn-success");
-		$('#buttonRecord').addClass("btn-danger");
-		$('#buttonRecord').attr("value", "Stop Recording");
 	}
-	isRecording = !isRecording;
 }
 
 function startRecording() {
