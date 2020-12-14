@@ -4,18 +4,23 @@ var debugMode = false;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var serverName = "publisher1"
-var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
 var destSaveURL = "/var/record/";
 var defaultRoomName = "room";
+var nickName = "Participant" + Math.floor(Math.random() * 100);
 
 var currentUrl = new URL(window.location.href);
 var roomName = currentUrl.searchParams.get("room");
+var username = currentUrl.searchParams.get("username");
 
 sessionName = roomName !== null ? roomName : defaultRoomName;
 console.log("sessionName name", sessionName);
+if (username !== null) {
+	nickName = username;
+}
+console.log("userName", nickName);
 
 if (debugMode) {
 	mediaServerUrl = "192.168.136.161:4443";
@@ -79,7 +84,7 @@ function joinSession() {
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
 			$('#main-video').fadeOut("fast", () => {
-				// $('#main-video p.nickName').html(clientData);
+				$('#main-video p.nickName').html(clientData);
 				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
@@ -402,7 +407,8 @@ function appendUserData(videoElement, connection) {
 	dataNode.className = "data-node";
 	dataNode.id = "data-" + nodeId;
 	// dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p><p class='userTypeName'>" + userTypeName + "</p>";
-	// videoElement.parentNode.append(dataNode, videoElement.nextSibling);	
+	dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p>";
+	videoElement.parentNode.append(dataNode);	
 	addClickListener(videoElement, clientData, serverData);
 }
 
@@ -515,7 +521,7 @@ function stopRecording() {
 }
 
 function updateUrl() {
-	var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + sessionName;
+	var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + sessionName + '&username=' + nickName;
 	window.history.pushState({ path: refresh }, '', refresh);
 }
 
