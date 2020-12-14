@@ -3,6 +3,7 @@ var session;
 var debugMode = false;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
+var serverName = "publisher1"
 var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
@@ -11,7 +12,7 @@ var destSaveURL = "/var/record/";
 var defaultRoomName = "room";
 
 var currentUrl = new URL(window.location.href);
-var roomName = currentUrl.searchParams.get("room"); 
+var roomName = currentUrl.searchParams.get("room");
 
 sessionName = roomName !== null ? roomName : defaultRoomName;
 console.log("sessionName name", sessionName);
@@ -24,62 +25,104 @@ else {
 }
 
 function joinSession() {
-	getToken((token) => {
+	// --- 1) Get an OpenVidu object ---
 
-		console.log(">>>>>token", token);
+	OV = new OpenVidu();
+	OV.setAdvancedConfiguration({
+		publisherSpeakingEventsOptions: {
+			interval: 700,   // Frequency of the polling of audio streams in ms (default 100)
+			threshold: -50  // Threshold volume in dB (default -50)
+		}
+	});
 
-		// --- 1) Get an OpenVidu object ---
+	// --- 2) Init a session ---
 
-		OV = new OpenVidu();
-		OV.setAdvancedConfiguration({
-			publisherSpeakingEventsOptions: {
-				interval: 700,   // Frequency of the polling of audio streams in ms (default 100)
-				threshold: -50  // Threshold volume in dB (default -50)
-			}
+	session = OV.initSession();
+
+	// --- 3) Specify the actions when events take place in the session ---
+
+	// On every new Stream received...
+	session.on('streamCreated', (event) => {
+
+		// Subscribe to the Stream to receive it
+		// HTML video will be appended to element with 'video-container' id
+		var subscriber = session.subscribe(event.stream, 'video-container');
+
+		// When the HTML video has been appended to DOM...
+		subscriber.on('videoElementCreated', (event) => {
+
+			// Add a new HTML element for the user's name and nickname over its video
+			appendUserData(event.element, subscriber.stream.connection);
 		});
+	});
 
-		// --- 2) Init a session ---
+	// On every Stream destroyed...
+	session.on('streamDestroyed', (event) => {
+		// Delete the HTML element with the user's name and nickname
+		removeUserData(event.stream.connection);
+	});
 
-		session = OV.initSession();
+	session.on('publisherStartSpeaking', (event) => {
+		console.log('>>>>>publisherStartSpeaking event:', event);
+		console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
+		var videoElement;
+		// $("[id*="+toggleGroup+"]")
+		if ($("[id*=" + event.connection.connectionId + "]")[0]) {
+			videoElement = $("[id*=" + event.connection.connectionId + "]")[0];
+		}
+		else {
+			videoElement = $("[id*=local]")[0];
+		}
 
-		// --- 3) Specify the actions when events take place in the session ---
+		console.log('>>>>>Publisher Speak Element', videoElement);
 
-		// On every new Stream received...
-		session.on('streamCreated', (event) => {
-
-			// Subscribe to the Stream to receive it
-			// HTML video will be appended to element with 'video-container' id
-			var subscriber = session.subscribe(event.stream, 'video-container');
-
-			// When the HTML video has been appended to DOM...
-			subscriber.on('videoElementCreated', (event) => {
-
-				// Add a new HTML element for the user's name and nickname over its video
-				appendUserData(event.element, subscriber.stream.connection);
+		var mainVideo = $('#main-video video').get(0);
+		if (mainVideo.srcObject !== videoElement.srcObject) {
+			$('#main-video').fadeOut("fast", () => {
+				// $('#main-video p.nickName').html(clientData);
+				// $('#main-video p.userName').html(serverData);
+				mainVideo.srcObject = videoElement.srcObject;
+				$('#main-video').fadeIn("fast");
 			});
-		});
+		}
+	});
 
-		// On every Stream destroyed...
-		session.on('streamDestroyed', (event) => {
-			// Delete the HTML element with the user's name and nickname
-			removeUserData(event.stream.connection);
-		});
+	session.on('publisherStopSpeaking', (event) => {
+		console.log('>>>>>Publisher ' + event.connection.connectionId + ' stop speaking');
+	});
 
-		// --- 4) Connect to the session passing the retrieved token and some more data from
-		//        the client (in this case a JSON with the nickname chosen by the user) ---
+	session.on('recordingStarted', (event) => {
+		console.log(">>>>>>>recordingStarted: ", event);
+		$('#buttonRecord').removeClass("btn-success");
+		$('#buttonRecord').addClass("btn-danger");
+		$('#buttonRecord').attr("value", "Stop Recording");
+		isRecording = true;
+		$("#buttonRecord").prop("disabled", false);
+	});
 
-		// var nickName = $("#nickName").val();
-		session.connect(token, { clientData: nickName })
+	session.on('recordingStopped', (event) => {
+		console.log(">>>>>>recordingStopped: ", event.id);
+		moveRecording(event.id, destSaveURL);
+
+		$('#buttonRecord').removeClass("btn-danger");
+		$('#buttonRecord').addClass("btn-success");
+		$('#buttonRecord').attr("value", "Start Recording");
+		isRecording = false;
+		$("#buttonRecord").prop("disabled", false);
+	});
+
+	getToken(sessionName).then(token => {
+
+		session.connect(token, { clientData: nickName, serverData: serverName })
 			.then(() => {
 
 				// --- 5) Set page layout for active call ---
 
 				// var userName = $("#user").val();
-				var userName = "publisher1";
+				var userName = serverName;
 				$('#session-title').text(sessionName);
 				$('#join').hide();
 				$('#session').show();
-
 
 				// Here we check somehow if the user has 'PUBLISHER' role before
 				// trying to publish its stream. Even if someone modified the client's code and
@@ -129,57 +172,8 @@ function joinSession() {
 				}
 			})
 			.catch(error => {
-				console.warn('There was an error connecting to the session:', error.code, error.message);
+				console.log('There was an error connecting to the session:', error.code, error.message);
 			});
-
-		session.on('publisherStartSpeaking', (event) => {
-			console.log('>>>>>publisherStartSpeaking event:', event);
-			console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
-			var videoElement;
-			// $("[id*="+toggleGroup+"]")
-			if ($("[id*=" + event.connection.connectionId + "]")[0]) {
-				videoElement = $("[id*=" + event.connection.connectionId + "]")[0];
-			}
-			else {
-				videoElement = $("[id*=local]")[0];
-			}
-
-			console.log('>>>>>Publisher Speak Element', videoElement);
-
-			var mainVideo = $('#main-video video').get(0);
-			if (mainVideo.srcObject !== videoElement.srcObject) {
-				$('#main-video').fadeOut("fast", () => {
-					// $('#main-video p.nickName').html(clientData);
-					// $('#main-video p.userName').html(serverData);
-					mainVideo.srcObject = videoElement.srcObject;
-					$('#main-video').fadeIn("fast");
-				});
-			}
-		});
-
-		session.on('publisherStopSpeaking', (event) => {
-			console.log('>>>>>Publisher ' + event.connection.connectionId + ' stop speaking');
-		});
-
-		session.on('recordingStarted', (event) => {
-			console.log(">>>>>>>recordingStarted: ", event);
-			$('#buttonRecord').removeClass("btn-success");
-			$('#buttonRecord').addClass("btn-danger");
-			$('#buttonRecord').attr("value", "Stop Recording");
-			isRecording = true;
-			$("#buttonRecord").prop("disabled", false);
-		});
-
-		session.on('recordingStopped', (event) => {
-			console.log(">>>>>>recordingStopped: ", event.id);
-			moveRecording(event.id, destSaveURL);
-
-			$('#buttonRecord').removeClass("btn-danger");
-			$('#buttonRecord').addClass("btn-success");
-			$('#buttonRecord').attr("value", "Start Recording");
-			isRecording = false;
-			$("#buttonRecord").prop("disabled", false);
-		});
 	});
 
 	return false;
@@ -226,7 +220,7 @@ function leaveSession() {
 function logIn() {
 	// var user = $("#user").val(); // Username
 	// var pass = $("#pass").val(); // Password
-	var user = "publisher1"; // Username
+	var user = serverName; // Username
 	var pass = "pass"; // Password
 
 	httpPostRequest(
@@ -257,6 +251,57 @@ function logOut() {
 	// );
 }
 
+function getToken(mySessionId) {
+	return createSession(mySessionId).then(sessionId => createToken(sessionId));
+}
+
+function createSession(sessionId) { // See https://openvidu.io/docs/reference-docs/REST-API/#post-apisessions
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			type: "POST",
+			url: 'https://' + mediaServerUrl + "/api/sessions",
+			data: JSON.stringify({
+				customSessionId: sessionId,
+				recordingMode: "MANUAL",
+				defaultRecordingLayout: "CUSTOM"
+			}),
+			headers: {
+				"Authorization": "Basic " + btoa("OPENVIDUAPP:MY_SECRET"),
+				"Content-Type": "application/json"
+			},
+			success: response => resolve(response.id),
+			error: (error) => {
+				if (error.status === 409) {
+					resolve(sessionId);
+				} else {
+					console.warn('No connection to OpenVidu Server. This may be a certificate error at ' + mediaServerUrl);
+					if (window.confirm('No connection to OpenVidu Server. This may be a certificate error at \"' + mediaServerUrl + '\"\n\nClick OK to navigate and accept it. ' +
+						'If no certificate warning is shown, then check that your OpenVidu Server is up and running at "' + mediaServerUrl + '"')) {
+						// location.assign(mediaServerUrl + '/accept-certificate');
+					}
+				}
+			}
+		});
+	});
+}
+
+function createToken(sessionId) { // See https://openvidu.io/docs/reference-docs/REST-API/#post-apitokens
+	return new Promise((resolve, reject) => {
+		$.ajax({
+			type: "POST",
+			url: 'https://' + mediaServerUrl + "/api/tokens",
+			data: JSON.stringify({ session: sessionId }),
+			headers: {
+				"Authorization": "Basic " + btoa("OPENVIDUAPP:MY_SECRET"),
+				"Content-Type": "application/json"
+			},
+			success: response => resolve(response.token),
+			error: error => reject(error)
+		});
+	});
+}
+
+/*
 function getToken(callback) {
 	// sessionName = $("#sessionName").val(); // Video-call chosen by the user
 
@@ -271,6 +316,7 @@ function getToken(callback) {
 		}
 	);
 }
+*/
 
 function removeUser() {
 	httpPostRequest(
@@ -346,7 +392,8 @@ function appendUserData(videoElement, connection) {
 		}
 	} else {
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
-		serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
+		serverData = serverName;
+		// serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
 		nodeId = connection.connectionId;
 		userTypeName = 'Remote';
 	}
