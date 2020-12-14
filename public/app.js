@@ -26,7 +26,7 @@ function joinSession() {
 		OV = new OpenVidu();
 		OV.setAdvancedConfiguration({
 			publisherSpeakingEventsOptions: {
-				interval: 100,   // Frequency of the polling of audio streams in ms (default 100)
+				interval: 700,   // Frequency of the polling of audio streams in ms (default 100)
 				threshold: -50  // Threshold volume in dB (default -50)
 			}
 		});
@@ -160,27 +160,27 @@ function joinSession() {
 			$('#buttonRecord').addClass("btn-danger");
 			$('#buttonRecord').attr("value", "Stop Recording");
 			isRecording = true;
-			$("#buttonRecord").prop("disabled",false);
+			$("#buttonRecord").prop("disabled", false);
 		});
 
 		session.on('recordingStopped', (event) => {
 			console.log(">>>>>>recordingStopped: ", event.id);
 			moveRecording(event.id, destSaveURL);
-			
+
 			$('#buttonRecord').removeClass("btn-danger");
 			$('#buttonRecord').addClass("btn-success");
 			$('#buttonRecord').attr("value", "Start Recording");
 			isRecording = false;
-			$("#buttonRecord").prop("disabled",false);
+			$("#buttonRecord").prop("disabled", false);
 		});
 	});
 
 	return false;
 }
 
-function moveRecording(sessionName, destDir){
+function moveRecording(sessionName, destDir) {
 	return new Promise((resolve, reject) => {
-		let data = JSON.stringify({ sessionName: sessionName, destDir: destDir});
+		let data = JSON.stringify({ sessionName: sessionName, destDir: destDir });
 		$.ajax({
 			type: 'POST',
 			url: debugMode ? 'https://192.168.136.161/moveRecording' : 'https://kurento.videoqa.com/moveRecording',
@@ -326,22 +326,22 @@ function appendUserData(videoElement, connection) {
 		serverData = connection.userName;
 		nodeId = 'main-videodata';
 		userTypeName = 'Local';
+
+		//show local video item on main video
+		var mainVideo = $('#main-video video').get(0);
+		if (mainVideo.srcObject !== videoElement.srcObject) {
+			$('#main-video').fadeOut("fast", () => {
+				// $('#main-video p.nickName').html(clientData);
+				// $('#main-video p.userName').html(serverData);
+				mainVideo.srcObject = videoElement.srcObject;
+				$('#main-video').fadeIn("fast");
+			});
+		}
 	} else {
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
 		nodeId = connection.connectionId;
 		userTypeName = 'Remote';
-	}
-
-	//show adding video item on main video
-	var mainVideo = $('#main-video video').get(0);
-	if (mainVideo.srcObject !== videoElement.srcObject) {
-		$('#main-video').fadeOut("fast", () => {
-			// $('#main-video p.nickName').html(clientData);
-			// $('#main-video p.userName').html(serverData);
-			mainVideo.srcObject = videoElement.srcObject;
-			$('#main-video').fadeIn("fast");
-		});
 	}
 
 	var dataNode = document.createElement('div');
@@ -413,7 +413,7 @@ function cleanSessionView() {
 
 function clickedRecordingBtn() {
 	console.log(">>>>>>clickedRecordingBtn", isRecording);
-	$("#buttonRecord").prop("disabled",true);
+	$("#buttonRecord").prop("disabled", true);
 	if (isRecording) {
 		stopRecording();
 	}
