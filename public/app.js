@@ -1,7 +1,7 @@
 var OV;
 var session;
 var localPublisher;
-var debugMode = false;
+var debugMode = true;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var serverName = "publisher1"
@@ -9,6 +9,8 @@ var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var isVideoMuting = false;
 var isAudioMuting = false;
+var isScreenShare = false;
+var isHanup = false;
 var recording;
 var destSaveURL = "/var/record/";
 var defaultRoomName = "room";
@@ -553,6 +555,87 @@ function clickedAudioMutingBtn() {
 		$('#buttonAudioMute').attr("value", "Audio Mute");
 	}
 	localPublisher.publishAudio(!isAudioMuting);
+}
+
+function clickedScreenShareBtn() {
+	isScreenShare = !isScreenShare;
+	if (isScreenShare) {
+		screenShare();
+	}
+	else {
+		showLocalCamera();
+	}
+}
+
+function screenShare() {
+	isScreenShare = true;
+	$('#buttonScreenShare').removeClass("btn-success");
+	$('#buttonScreenShare').addClass("btn-warning");
+	$('#buttonScreenShare').attr("value", "Local Camera");
+	$("#buttonScreenShare").prop("disabled", true);
+
+	var OV = new OpenVidu();
+	var sessionScreen = OV.initSession();
+	getToken().then((token) => {
+		sessionScreen.connect(token).then(() => {
+			var publisher = OV.initPublisher("html-element-id", { videoSource: "screen" });
+
+			publisher.once('accessAllowed', (event) => {
+				publisher.stream.getMediaStream().getVideoTracks()[0].addEventListener('ended', () => {
+					console.log('User pressed the "Stop sharing" button');
+					showLocalCamera();
+				});
+				sessionScreen.publish(publisher);
+
+			});
+
+			publisher.once('accessDenied', (event) => {
+				console.warn('ScreenShare: Access Denied');
+				showLocalCamera();
+			});
+
+			$("#buttonScreenShare").prop("disabled", false);
+		}).catch((error => {
+			console.warn('There was an error connecting to the session:', error.code, error.message);
+
+		}));
+	});
+}
+
+function showLocalCamera() {
+	isScreenShare = false;
+	$('#buttonScreenShare').removeClass("btn-warning");
+	$('#buttonScreenShare').addClass("btn-success");
+	$('#buttonScreenShare').attr("value", "Screen Share");
+}
+
+function handleHandup() {
+	console.log(">>>>>clicked hand up", isHanup);
+	isHanup = !isHanup;
+	if (isHanup) {
+		$('#hand_img').attr("src", './assets/image/unhand.png');
+		$('#hand_button').removeClass("btn-success");
+		$('#hand_button').addClass("btn-warning");
+	}
+	else {
+		$('#hand_img').attr("src", './assets/image/hand.png');
+		$('#hand_button').removeClass("btn-warning");
+		$('#hand_button').addClass("btn-success");
+	}
+
+	setLocalHandImage(isHanup);
+}
+
+function setLocalHandImage(flag) {
+	let img = flag ? './assets/image/hand.png' : '';
+
+	// $('.videoitem').children('img').attr('src', img);
+	if (flag) {//hand up
+
+	}
+	else {//hand off
+
+	}
 }
 
 function updateUrl() {

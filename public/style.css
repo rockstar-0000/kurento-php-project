@@ -359,13 +359,14 @@ table i {
     overflow: auto;
 }
 
-#buttonVideoMute {
+.btn-toggle {
 	width: 125px;
 }
 
-#buttonAudioMute {
-	width: 125px;
+#hand_img{
+    width: 21px !important;
 }
+
 /* xs ans md screen resolutions*/
 
 @media screen and (max-width: 991px) {
