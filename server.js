@@ -228,7 +228,23 @@ app.post('/api-sessions/remove-user', function (req, res) {
 });
 
 /* REST API */
-
+app.post('/moveRecording', (req, res) => {
+    let data = req.body;
+    exec("./test.sh " + data.sessionName + " " + data.destDir, (error, stdout, stderr) => {
+        if (error) {
+            console.log(`error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+        console.log("delete path: ", data.sessionName)
+        console.log("delete path: ", data.destDir)
+        res.send(response);
+    });
+});
 
 
 /* AUXILIARY METHODS */
