@@ -6,6 +6,7 @@ var session = require('express-session');
 var https = require('https');
 var bodyParser = require('body-parser'); // Pull information from HTML POST (express4)
 var app = express(); // Create our app with express
+const { exec, spawn } = require('child_process');
 
 app.use(cors())
 
@@ -34,7 +35,7 @@ console.log("App listening on port 443");
 /* REST API */
 app.post('/moveRecording', (req, res) => {
     let data = req.body;
-    exec("./test.sh " + data.sessionName + " " + data.destDir, (error, stdout, stderr) => {
+    exec("./move.sh " + data.sessionName + " " + data.destDir, (error, stdout, stderr) => {
         if (error) {
             console.log(`error: ${error.message}`);
             return;
@@ -44,8 +45,9 @@ app.post('/moveRecording', (req, res) => {
             return;
         }
         console.log(`stdout: ${stdout}`);
-        console.log("delete path: ", data.sessionName)
-        console.log("delete path: ", data.destDir)
+        console.log("delete path: ", data.sessionName);
+        console.log("delete path: ", data.destDir);
+	var response = {message: "Moved!"};
         res.send(response);
     });
 });
