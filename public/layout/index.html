@@ -1,0 +1,64 @@
+<html>
+
+<head>
+    <script src="openvidu-browser-2.12.0.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+</head>
+
+<body style="overflow: hidden;margin: 0px !important;">
+    <div id="videos" style="overflow: hidden;"></div>
+</body>
+
+<script>
+    var url = new URL(window.location.href);
+    var SESSION_ID = url.searchParams.get("sessionId");
+    var SECRET = "MY_SECRET"; //url.searchParams.get("secret");
+    var TOKEN = 'wss://' + location.hostname + ':4443?sessionId=' + SESSION_ID + '&secret=' + SECRET + '&recorder=true';
+
+    var OV = new OpenVidu();
+    var session = OV.initSession();
+
+    session.on('streamCreated', event => {
+
+        var subscriber = session.subscribe(event.stream, 'videos');
+
+        subscriber.on('videoElementCreated', event => {
+            debugger;
+            setVideoWidth(event.target.id);
+        });
+     });
+
+    session.on('publisherStartSpeaking', (event) => {
+        setTimeout(function(){
+            setVideoWidth(event.connection.connectionId);
+        },7000)
+	});
+
+	session.on('publisherStopSpeaking', (event) => {
+        // setVideoWidth("local");
+    });
+
+    function setVideoWidth(v) {
+        $("#videos > video").each(function () {
+            $(this).css("height", "0%");
+            $(this).css("width", "0%");
+            $(this).css("display", "none");
+            $(this).css("background", "black");
+			$(this)['muted'] = true;
+            let id = $(this).attr('id');
+		    if (id.indexOf(v) != -1) {
+                $(this).css("display", "block");
+                $(this).css("height", "100%");
+                $(this).css("width", "100%");
+			    $(this)['muted'] = false;
+            }
+        });
+}
+
+    session.connect(TOKEN)
+        .then(() => { console.log('Recorder participant connected') })
+        .catch(error => { console.error(error) 
+    });
+</script>
+
+</html>
