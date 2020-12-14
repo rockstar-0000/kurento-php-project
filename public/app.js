@@ -7,6 +7,7 @@ var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
+var destSaveURL = "/var/record/";
 
 if (debugMode) {
 	mediaServerUrl = "192.168.136.161:4443";
@@ -155,7 +156,6 @@ function joinSession() {
 
 		session.on('recordingStarted', (event) => {
 			console.log(">>>>>>>recordingStarted: ", event);
-
 			$('#buttonRecord').removeClass("btn-success");
 			$('#buttonRecord').addClass("btn-danger");
 			$('#buttonRecord').attr("value", "Stop Recording");
@@ -164,8 +164,9 @@ function joinSession() {
 		});
 
 		session.on('recordingStopped', (event) => {
-			console.log(">>>>>>recordingStopped: ", event);
-
+			console.log(">>>>>>recordingStopped: ", event.id);
+			moveRecording(event.id, destSaveURL);
+			
 			$('#buttonRecord').removeClass("btn-danger");
 			$('#buttonRecord').addClass("btn-success");
 			$('#buttonRecord').attr("value", "Start Recording");
@@ -175,6 +176,24 @@ function joinSession() {
 	});
 
 	return false;
+}
+
+function moveRecording(sessionName, destDir){
+	return new Promise((resolve, reject) => {
+		let data = JSON.stringify({ sessionName: sessionName, destDir: destDir});
+		$.ajax({
+			type: 'POST',
+			url: 'https://kurento.videoqa.com/moveRecording',
+			data: data,
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			dataType: 'json',
+			success: function (data) {
+				console.log(data);
+			}
+		});
+	});
 }
 
 function leaveSession() {
