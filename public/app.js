@@ -2,12 +2,19 @@ var OV;
 var session;
 var debugMode = false;
 var mediaServerUrl;
-var sessionName = "room";	// Name of the video session the user will connect to
+var sessionName;	// Name of the video session the user will connect to
 var nickName = "Participant " + Math.floor(Math.random() * 100);
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var recording;
 var destSaveURL = "/var/record/";
+var defaultRoomName = "room";
+
+var currentUrl = new URL(window.location.href);
+var roomName = currentUrl.searchParams.get("room"); 
+
+sessionName = roomName !== null ? roomName : defaultRoomName;
+console.log("sessionName name", sessionName);
 
 if (debugMode) {
 	mediaServerUrl = "192.168.136.161:4443";
