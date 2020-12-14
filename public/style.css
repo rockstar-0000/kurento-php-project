@@ -359,6 +359,13 @@ table i {
     overflow: auto;
 }
 
+#buttonVideoMute {
+	width: 125px;
+}
+
+#buttonAudioMute {
+	width: 125px;
+}
 /* xs ans md screen resolutions*/
 
 @media screen and (max-width: 991px) {

@@ -1,11 +1,14 @@
 var OV;
 var session;
+var localPublisher;
 var debugMode = false;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var serverName = "publisher1"
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
+var isVideoMuting = false;
+var isAudioMuting = false;
 var recording;
 var destSaveURL = "/var/record/";
 var defaultRoomName = "room";
@@ -137,6 +140,7 @@ function joinSession() {
 
 					// --- 6) Get your own camera stream ---
 
+
 					var publisher = OV.initPublisher('video-container', {
 						audioSource: undefined, // The source of audio. If undefined default microphone
 						videoSource: undefined, // The source of video. If undefined default webcam
@@ -170,6 +174,7 @@ function joinSession() {
 					// --- 8) Publish your stream ---
 
 					session.publish(publisher);
+					localPublisher = publisher;
 
 				} else {
 					console.warn('You don\'t have permissions to publish');
@@ -408,7 +413,7 @@ function appendUserData(videoElement, connection) {
 	dataNode.id = "data-" + nodeId;
 	// dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p><p class='userTypeName'>" + userTypeName + "</p>";
 	dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p>";
-	videoElement.parentNode.append(dataNode);	
+	videoElement.parentNode.append(dataNode);
 	addClickListener(videoElement, clientData, serverData);
 }
 
@@ -518,6 +523,36 @@ function stopRecording() {
 			console.log(data);
 		}
 	});
+}
+
+function clickedVideoMutingBtn() {
+	isVideoMuting = !isVideoMuting;
+	if (isVideoMuting) {
+		$('#buttonVideoMute').removeClass("btn-success");
+		$('#buttonVideoMute').addClass("btn-warning");
+		$('#buttonVideoMute').attr("value", "Video Unmute");
+	}
+	else {
+		$('#buttonVideoMute').removeClass("btn-warning");
+		$('#buttonVideoMute').addClass("btn-success");
+		$('#buttonVideoMute').attr("value", "Video Mute");
+	}
+	localPublisher.publishVideo(!isVideoMuting);
+}
+
+function clickedAudioMutingBtn() {
+	isAudioMuting = !isAudioMuting;
+	if (isAudioMuting) {
+		$('#buttonAudioMute').removeClass("btn-success");
+		$('#buttonAudioMute').addClass("btn-warning");
+		$('#buttonAudioMute').attr("value", "Audio Unmute");
+	}
+	else {
+		$('#buttonAudioMute').removeClass("btn-warning");
+		$('#buttonAudioMute').addClass("btn-success");
+		$('#buttonAudioMute').attr("value", "Audio Mute");
+	}
+	localPublisher.publishAudio(!isAudioMuting);
 }
 
 function updateUrl() {
