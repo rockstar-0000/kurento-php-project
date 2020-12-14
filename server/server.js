@@ -1,10 +1,13 @@
 // Node imports
 var express = require('express');
 var fs = require('fs');
+var cors = require('cors');
 var session = require('express-session');
 var https = require('https');
 var bodyParser = require('body-parser'); // Pull information from HTML POST (express4)
 var app = express(); // Create our app with express
+
+app.use(cors())
 
 // Server configuration
 app.use(session({
