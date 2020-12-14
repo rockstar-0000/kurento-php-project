@@ -86,7 +86,7 @@ function joinSession() {
 						videoSource: undefined, // The source of video. If undefined default webcam
 						publishAudio: true,  	// Whether you want to start publishing with your audio unmuted or not
 						publishVideo: true,  	// Whether you want to start publishing with your video enabled or not
-						resolution: '640x480',  // The resolution of your video
+						resolution: '1280x720',  // The resolution of your video
 						frameRate: 30,			// The frame rate of your video
 						insertMode: 'APPEND',	// How the video is inserted in the target element 'video-container'
 						mirror: false       	// Whether to mirror your local video or not
@@ -313,6 +313,18 @@ function appendUserData(videoElement, connection) {
 		nodeId = connection.connectionId;
 		userTypeName = 'Remote';
 	}
+
+	//show adding video item on main video
+	var mainVideo = $('#main-video video').get(0);
+	if (mainVideo.srcObject !== videoElement.srcObject) {
+		$('#main-video').fadeOut("fast", () => {
+			// $('#main-video p.nickName').html(clientData);
+			// $('#main-video p.userName').html(serverData);
+			mainVideo.srcObject = videoElement.srcObject;
+			$('#main-video').fadeIn("fast");
+		});
+	}
+
 	var dataNode = document.createElement('div');
 	dataNode.className = "data-node";
 	dataNode.id = "data-" + nodeId;
@@ -338,6 +350,11 @@ function cleanMainVideo() {
 	$('#main-video p').each(function () {
 		$(this).html('');
 	});
+
+	//add local video item in main video
+	videoElement = $("[id*=local]")[0];
+	$('#main-video video').get(0).srcObject = videoElement.srcObject;
+	$('#main-video').fadeIn("fast");
 }
 
 function addClickListener(videoElement, clientData, serverData) {
