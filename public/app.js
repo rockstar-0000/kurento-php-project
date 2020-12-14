@@ -183,7 +183,7 @@ function moveRecording(sessionName, destDir){
 		let data = JSON.stringify({ sessionName: sessionName, destDir: destDir});
 		$.ajax({
 			type: 'POST',
-			url: 'https://kurento.videoqa.com/moveRecording',
+			url: debugMode ? 'https://192.168.136.161/moveRecording' : 'https://kurento.videoqa.com/moveRecording',
 			data: data,
 			headers: {
 				'Content-Type': 'application/json',
