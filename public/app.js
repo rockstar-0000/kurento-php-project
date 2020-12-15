@@ -4,7 +4,6 @@ var localPublisher = null;
 var debugMode = true;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
-var serverName = "publisher1"
 var token;			// Token retrieved from OpenVidu Server
 var isRecording = false;
 var isVideoMuting = false;
@@ -12,9 +11,15 @@ var isAudioMuting = false;
 var isScreenShare = false;
 var isHanup = false;
 var recording;
+
+//constants
+var serverName = "publisher1"
 var destSaveURL = "/var/record/";
 var defaultRoomName = "room";
 var nickName = "Participant" + Math.floor(Math.random() * 100);
+var handupType = "hand-up";
+var handUp = "HAND-UP";
+var handDown = "HAND-DOWN";
 
 var currentUrl = new URL(window.location.href);
 var roomName = currentUrl.searchParams.get("room");
@@ -56,7 +61,7 @@ function joinSession() {
 		console.log(">>>>>>>streamCreated", event);
 		// Subscribe to the Stream to receive it
 		// HTML video will be appended to element with 'remote-video-container' id
-		$('#remote-video-container').append(`<div class='video-item-container' id='${event.stream.streamId + "-div"}'><img class="hand" src="./assets/image/hand.png"></div>`)
+		$('#remote-video-container').append(`<div class='video-item-container' id='${event.stream.streamId + "-div"}'><img class="hand" src=""></div>`)
 		var subscriber = session.subscribe(event.stream, event.stream.streamId + "-div");
 
 		// When the HTML video has been appended to DOM...
@@ -120,6 +125,11 @@ function joinSession() {
 		$('#buttonRecord').attr("value", "Start Recording");
 		isRecording = false;
 		$("#buttonRecord").prop("disabled", false);
+	});
+
+	// Receiver of the message (usually before calling 'session.connect')
+	session.on('signal:' + handupType, (event) => {
+		console.log(">>>>>> hand-up", event); // Message
 	});
 
 	getToken(sessionName).then(token => {
@@ -628,26 +638,46 @@ function handleHandup() {
 		$('#hand_img').attr("src", './assets/image/unhand.png');
 		$('#hand_button').removeClass("btn-success");
 		$('#hand_button').addClass("btn-warning");
+		sendHandUp();
 	}
 	else {
 		$('#hand_img').attr("src", './assets/image/hand.png');
 		$('#hand_button').removeClass("btn-warning");
 		$('#hand_button').addClass("btn-success");
+		sendHandDown();
 	}
-
-	setLocalHandImage(isHanup);
 }
 
-function setLocalHandImage(flag) {
-	let img = flag ? './assets/image/hand.png' : '';
+function sendHandUp() {
+	// Sender of the message (after 'session.connect')
+	session.signal({
+		data: handUp,  // Any string (optional)
+		to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+		type: handupType            // The type of message (optional)
+	})
+		.then(() => {
+			console.log('Message successfully sent');
+			$("#local-video-div .hand").attr('src', "./assets/image/hand.png");
+		})
+		.catch(error => {
+			console.error(error);
+		});
+}
 
-	// $('.videoitem').children('img').attr('src', img);
-	if (flag) {//hand up
-
-	}
-	else {//hand off
-
-	}
+function sendHandDown() {
+	// Sender of the message (after 'session.connect')
+	session.signal({
+		data: handDown,  // Any string (optional)
+		to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+		type: handupType            // The type of message (optional)
+	})
+		.then(() => {
+			console.log('Message successfully sent');
+			$("#local-video-div .hand").attr('src', "");
+		})
+		.catch(error => {
+			console.error(error);
+		});
 }
 
 function updateUrl() {
