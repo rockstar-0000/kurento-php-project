@@ -11,6 +11,9 @@ var isAudioMuting = false;
 var isScreenShare = false;
 var isHanup = false;
 var recording;
+var isConnectedSubscriber = false;
+var isOwner;
+
 
 //constants
 var serverName = "publisher1"
@@ -58,7 +61,8 @@ function joinSession() {
 
 	// On every new Stream received...
 	session.on('streamCreated', (event) => {
-		console.log(">>>>>>>streamCreated", event);
+		console.log(">>>>>>>streamCreated Subscriber", event);
+		isConnectedSubscriber = true;
 		// Subscribe to the Stream to receive it
 		// HTML video will be appended to element with 'remote-video-container' id
 		$('#remote-video-container').append(`<div class='video-item-container' id='${event.stream.streamId + "-div"}'><img class="hand" src=""></div>`)
@@ -163,6 +167,25 @@ function joinSession() {
 
 					// When our HTML video has been added to DOM...
 					publisher.on('videoElementCreated', (event) => {
+						console.log(">>>>>>>streamCreated Publisher", event);
+						console.log(">>>>>>>streamCreated isOwner, isConnectedSubscriber", isOwner, isConnectedSubscriber);
+						if (isOwner == "yes") {
+							$("#buttonRecord").show();
+							console.log(">>>>>>>buttonRecord shown");
+						}
+						else {
+							if (isConnectedSubscriber) {//already created room.
+								$("#buttonRecord").hide();
+								isOwner = "no";
+								console.log(">>>>>>>buttonRecord hidden");
+							}
+							else {//first joined user on room.
+								$("#buttonRecord").show();
+								isOwner = "yes";
+								console.log(">>>>>>>buttonRecord shown");
+							}
+						}
+
 						// Init the main video with ours and append our data
 						var userData = {
 							nickName: nickName,
@@ -379,7 +402,7 @@ window.onbeforeunload = () => { // Gracefully leave session
 		removeUser();
 		leaveSession();
 	}
-	logOut();
+	// logOut();
 }
 
 function appendUserData(videoElement, connection) {
@@ -388,8 +411,6 @@ function appendUserData(videoElement, connection) {
 	var nodeId;
 	var userTypeName;
 
-	console.log(">>>>>appendUserData: videoElement", videoElement);
-	console.log(">>>>>appendUserData: connection", connection);
 	if (connection.nickName) { // Appending local video data
 		clientData = connection.nickName;
 		serverData = connection.userName;
@@ -677,9 +698,26 @@ function sendHandDown() {
 		});
 }
 
+window.onbeforeunload = function () {
+	console.log("onbeforeunload isOwner", isOwner);
+	sessionStorage.setItem("owner", isOwner);
+}
+
+window.onload = function () {
+	var valueOwner;
+	valueOwner = sessionStorage.getItem("owner");
+	console.log("sessionStorage valueOwner", valueOwner);
+
+	if (valueOwner !== null) {
+		isOwner = valueOwner;
+		console.log("isOwner", isOwner);
+	}
+}
+
 function updateUrl() {
 	var refresh = window.location.protocol + "//" + window.location.host + window.location.pathname + '?room=' + sessionName + '&username=' + nickName;
 	window.history.pushState({ path: refresh }, '', refresh);
+	$("#buttonRecord").hide();
 }
 
 updateUrl();
