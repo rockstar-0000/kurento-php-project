@@ -1,7 +1,7 @@
 var OV;
 var session;
 var localPublisher = null;
-var debugMode = true;
+var debugMode = false;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var token;			// Token retrieved from OpenVidu Server
@@ -45,7 +45,7 @@ function joinSession() {
 	OV = new OpenVidu();
 	OV.setAdvancedConfiguration({
 		publisherSpeakingEventsOptions: {
-			interval: 700,   // Frequency of the polling of audio streams in ms (default 100)
+			interval: 300,   // Frequency of the polling of audio streams in ms (default 100)
 			threshold: -50  // Threshold volume in dB (default -50)
 		}
 	});
@@ -82,12 +82,11 @@ function joinSession() {
 		console.log('>>>>>publisherStartSpeaking event:', event);
 		console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
 		var videoElement;
-		// $("[id*="+toggleGroup+"]")
-		if ($("[id*=" + event.connection.connectionId + "]")[0]) {
-			videoElement = $("[id*=" + event.connection.connectionId + "]")[0];
+		if ($("video[id*=" + event.connection.connectionId + "]")[0]) {
+			videoElement = $("video[id*=" + event.connection.connectionId + "]")[0];
 		}
 		else {
-			videoElement = $("[id*=local]")[0];
+			videoElement = $("video[id*=local]")[0];
 		}
 
 		console.log('>>>>>Publisher Speak Element', videoElement);
@@ -95,8 +94,6 @@ function joinSession() {
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
 			$('#main-video').fadeOut("fast", () => {
-				$('#main-video p.nickName').html(clientData);
-				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
