@@ -1,6 +1,6 @@
 var OV;
 var session;
-var localPublisher;
+var localPublisher = null;
 var debugMode = true;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
@@ -53,10 +53,11 @@ function joinSession() {
 
 	// On every new Stream received...
 	session.on('streamCreated', (event) => {
-
+		console.log(">>>>>>>streamCreated", event);
 		// Subscribe to the Stream to receive it
-		// HTML video will be appended to element with 'video-container' id
-		var subscriber = session.subscribe(event.stream, 'video-container');
+		// HTML video will be appended to element with 'remote-video-container' id
+		$('#remote-video-container').append(`<div class='video-item-container' id='${event.stream.streamId + "-div"}'><img class="hand" src="./assets/image/hand.png"></div>`)
+		var subscriber = session.subscribe(event.stream, event.stream.streamId + "-div");
 
 		// When the HTML video has been appended to DOM...
 		subscriber.on('videoElementCreated', (event) => {
@@ -139,11 +140,8 @@ function joinSession() {
 				// published the stream, it wouldn't work if the token sent in Session.connect
 				// method is not recognized as 'PUBLIHSER' role by OpenVidu Server
 				if (isPublisher(userName)) {
-
 					// --- 6) Get your own camera stream ---
-
-
-					var publisher = OV.initPublisher('video-container', {
+					var publisher = OV.initPublisher("local-video-div", {
 						audioSource: undefined, // The source of audio. If undefined default microphone
 						videoSource: undefined, // The source of video. If undefined default webcam
 						publishAudio: true,  	// Whether you want to start publishing with your audio unmuted or not
@@ -177,7 +175,6 @@ function joinSession() {
 
 					session.publish(publisher);
 					localPublisher = publisher;
-
 				} else {
 					console.warn('You don\'t have permissions to publish');
 					initMainVideoThumbnail(); // Show SUBSCRIBER message in main video
@@ -424,7 +421,10 @@ function removeUserData(connection) {
 	if ($(userNameRemoved).find('p.userName').html() === $('#main-video p.userName').html()) {
 		cleanMainVideo(); // The participant focused in the main video has left
 	}
-	$("#data-" + connection.connectionId).remove();
+	// $("#data-" + connection.connectionId).remove();
+
+	console.log(">>>>>>>>removeUserData", $(`div[id*="${connection.connectionId + "-div"}"]`));
+	$(`div[id*="${connection.connectionId + "-div"}"]`)[0].remove();
 }
 
 function removeAllUserData() {
@@ -438,7 +438,7 @@ function cleanMainVideo() {
 	});
 
 	//add local video item in main video
-	videoElement = $("[id*=local]")[0];
+	videoElement = $("#local-video-div video")[0];
 	$('#main-video video').get(0).srcObject = videoElement.srcObject;
 	$('#main-video').fadeIn("fast");
 }
@@ -571,35 +571,32 @@ function screenShare() {
 	isScreenShare = true;
 	$('#buttonScreenShare').removeClass("btn-success");
 	$('#buttonScreenShare').addClass("btn-warning");
-	$('#buttonScreenShare').attr("value", "Local Camera");
+	$('#buttonScreenShare').attr("value", "Stop Share");
+	/*
 	$("#buttonScreenShare").prop("disabled", true);
+	var publisher = OV.initPublisher("html-element-id", { videoSource: "screen" });
 
-	var OV = new OpenVidu();
-	var sessionScreen = OV.initSession();
-	getToken().then((token) => {
-		sessionScreen.connect(token).then(() => {
-			var publisher = OV.initPublisher("html-element-id", { videoSource: "screen" });
+	publisher.once('accessAllowed', (event) => {
+		session.unpublish(localPublisher);
+		localPublisher = publisher;
+		session.publish(publisher);
 
-			publisher.once('accessAllowed', (event) => {
-				publisher.stream.getMediaStream().getVideoTracks()[0].addEventListener('ended', () => {
-					console.log('User pressed the "Stop sharing" button');
-					showLocalCamera();
-				});
-				sessionScreen.publish(publisher);
-
-			});
-
-			publisher.once('accessDenied', (event) => {
-				console.warn('ScreenShare: Access Denied');
-				showLocalCamera();
-			});
-
-			$("#buttonScreenShare").prop("disabled", false);
-		}).catch((error => {
-			console.warn('There was an error connecting to the session:', error.code, error.message);
-
-		}));
+		publisher.stream.getMediaStream().getVideoTracks()[0].addEventListener('ended', () => {
+			console.log('User pressed the "Stop sharing" button');
+			showLocalCamera();
+		});
 	});
+
+	publisher.once('accessDenied', (event) => {
+		console.warn('ScreenShare: Access Denied');
+		isScreenShare = false;
+		$('#buttonScreenShare').removeClass("btn-warning");
+		$('#buttonScreenShare').addClass("btn-success");
+		$('#buttonScreenShare').attr("value", "Screen Share");
+	});
+
+	$("#buttonScreenShare").prop("disabled", false);
+	*/
 }
 
 function showLocalCamera() {
@@ -607,6 +604,21 @@ function showLocalCamera() {
 	$('#buttonScreenShare').removeClass("btn-warning");
 	$('#buttonScreenShare').addClass("btn-success");
 	$('#buttonScreenShare').attr("value", "Screen Share");
+
+	// var publisher = OV.initPublisher(undefined, {
+	// 	audioSource: undefined, // The source of audio. If undefined default microphone
+	// 	videoSource: undefined, // The source of video. If undefined default webcam
+	// 	publishAudio: true,  	// Whether you want to start publishing with your audio unmuted or not
+	// 	publishVideo: true,  	// Whether you want to start publishing with your video enabled or not
+	// 	resolution: '1280x720',  // The resolution of your video
+	// 	frameRate: 30,			// The frame rate of your video
+	// 	insertMode: 'APPEND',	// How the video is inserted in the target element 'video-container'
+	// 	mirror: false       	// Whether to mirror your local video or not
+	// });
+
+	// session.unpublish(localPublisher);
+	// session.publish(publisher);
+	// localPublisher = publisher;
 }
 
 function handleHandup() {

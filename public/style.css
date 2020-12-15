@@ -40,7 +40,9 @@ nav i.fa:hover {
 }
 
 #main-container {
-	padding-bottom: 80px;
+    display: flex;
+	height: 100%;
+    width: 100%;
 }
 
 .vertical-center {
@@ -217,8 +219,11 @@ a:hover .demo-logo {
 }
 
 #session-header {
-	margin-top: 20px;
-	margin-bottom: 20px;
+    width: 100%;
+	height: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #session-header form {
@@ -232,41 +237,6 @@ a:hover .demo-logo {
 #buttonLeaveSession {
 	float: right;
 	margin-top: 20px;
-}
-
-#video-container video {
-	position: relative;
-	float: left;
-	width: 100%;
-	cursor: pointer;
-	margin: 3px 0px;
-    border: 1px solid red;
-}
-
-#video-container div {
-	float: left;
-	width: 100%;
-	position: relative;
-}
-
-#video-container p {
-	display: inline-block;
-	background: #f8f8f8;
-	padding-left: 5px;
-	padding-right: 5px;
-	color: #777777;
-	font-weight: bold;
-	border-bottom-right-radius: 4px;
-}
-
-#video-container p.userName {
-	float: right;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 0px;
-    font-weight: lighter;
-    font-size: 12px;
-    background: #777777;
-    color: #f8f8f8;
 }
 
 video {
@@ -299,22 +269,13 @@ video {
     color: #f8f8f8;
 }
 
-
-#session img {
-	width: 100%;
-	height: auto;
-	display: inline-block;
-	object-fit: contain;
-	vertical-align: baseline;
+#main-video {
+    width: 100%;
+	height: 95%;
 }
 
-#session #video-container img {
-	position: relative;
-	float: left;
-	width: 50%;
-	cursor: pointer;
-	object-fit: cover;
-	height: 180px;
+#main-video video {
+    height: 100%;
 }
 
 table i {
@@ -349,51 +310,74 @@ table i {
 
 #session {
 	position: relative;
-
+	display: flex;
+	width: 100%;
+	height: 100%;
+	flex-direction: column;
 }
 
 #video-container {
 	position: absolute;
-	right: 0;
-	height: 80vh;
+    width: 250px;
+    height: 100%;
+    right: 0;
     overflow: auto;
 }
 
+.video-item-container {
+	float: left;
+    width: 100%;
+    position: relative;
+	height: 170px;
+	display: flex;
+    flex-direction: column;
+	justify-content: center;
+}
+
+#local-video-div video {
+	border: 1px solid red;
+}
+
+.video-item-container video {
+	border: 1px solid green;
+}
+
+.hand {
+	position: absolute;
+    top: 10px;
+	right: 10px;
+	visibility: hidden;
+}
+
 .btn-toggle {
-	width: 125px;
+	width: 130px;
+    margin-right: 20px;
 }
 
 #hand_img{
     width: 21px !important;
 }
 
-/* xs ans md screen resolutions*/
+.data-node {
+	float: left;
+	width: 100%;
+	position: relative;
+}
 
-@media screen and (max-width: 991px) {
-	#join {
-		padding-top: inherit;
-	}
-	
-	#not-logged {
-		padding-top: inherit;
-	}
-	.container .navbar-header {
-		margin-right: 0 !important;
-		margin-left: 0 !important;
-	}
-	.nav-icon {
-		padding: 9px 8px 9px 8px;
-	}
-	nav i.fa {
-		font-size: 32px;
-	}
-	.vertical-center {
-		padding-top: 10px;
-	}
-	#img-div {
-		padding-bottom: 1em;
-	}
-	#img-div img {
-		height: 10%;
-	}
+.data-node p {
+	display: inline-block;
+	background: #f8f8f8;
+	padding-left: 5px;
+	padding-right: 5px;
+	color: #777777;
+	font-weight: bold;
+	border-bottom-right-radius: 4px;
+	margin: 0px;
+}
+
+#remote-video-container {
+    width: 100%;
+	height: calc(100vh - 170px);
+	display: flex;
+	flex-direction: column;
 }
