@@ -340,6 +340,8 @@ table i {
 
 .video-item-container video {
 	border: 1px solid green;
+	height: 150px;
+	background: black;
 }
 
 .hand {

@@ -417,6 +417,7 @@ function appendUserData(videoElement, connection) {
 		nodeId = 'main-videodata';
 		userTypeName = 'Local';
 
+		$("#data-local p").text(clientData);
 		//show local video item on main video
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
@@ -427,20 +428,19 @@ function appendUserData(videoElement, connection) {
 				$('#main-video').fadeIn("fast");
 			});
 		}
-	} else {
+	} else { // Appending remote video data
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = serverName;
 		// serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
 		nodeId = connection.connectionId;
 		userTypeName = 'Remote';
-	}
 
-	var dataNode = document.createElement('div');
-	dataNode.className = "data-node";
-	dataNode.id = "data-" + nodeId;
-	// dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p><p class='userTypeName'>" + userTypeName + "</p>";
-	dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p>";
-	videoElement.parentNode.append(dataNode);
+		var dataNode = document.createElement('div');
+		dataNode.className = "data-node";
+		dataNode.id = "data-" + nodeId;
+		dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p>";
+		videoElement.parentNode.append(dataNode);
+	}
 	addClickListener(videoElement, clientData, serverData);
 }
 
@@ -476,8 +476,8 @@ function addClickListener(videoElement, clientData, serverData) {
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
 			$('#main-video').fadeOut("fast", () => {
-				$('#main-video p.nickName').html(clientData);
-				$('#main-video p.userName').html(serverData);
+				// $('#main-video p.nickName').html(clientData);
+				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
@@ -600,10 +600,11 @@ function screenShare() {
 	$('#buttonScreenShare').removeClass("btn-success");
 	$('#buttonScreenShare').addClass("btn-warning");
 	$('#buttonScreenShare').attr("value", "Stop Share");
-	/*
-	$("#buttonScreenShare").prop("disabled", true);
-	var publisher = OV.initPublisher("html-element-id", { videoSource: "screen" });
 
+	$("#buttonScreenShare").prop("disabled", true);
+	var publisher = OV.initPublisher("local-video-div", { videoSource: "screen" });
+
+	// addClickListener(videoElement, "", "");
 	publisher.once('accessAllowed', (event) => {
 		session.unpublish(localPublisher);
 		localPublisher = publisher;
@@ -612,6 +613,21 @@ function screenShare() {
 		publisher.stream.getMediaStream().getVideoTracks()[0].addEventListener('ended', () => {
 			console.log('User pressed the "Stop sharing" button');
 			showLocalCamera();
+		});
+
+		publisher.on('videoElementCreated', (event) => {
+			console.log(">>>>>>>streamCreated screenShare", event);
+
+			var mainVideo = $('#main-video video').get(0);
+			$('#main-video').fadeOut("fast", () => {
+				// $('#main-video p.nickName').html(clientData);
+				// $('#main-video p.userName').html(serverData);
+				mainVideo.srcObject = event.element.srcObject;
+				$('#main-video').fadeIn("fast");
+			});
+
+			addClickListener(event.element);
+			$(event.element).prop('muted', true); // Mute local video
 		});
 	});
 
@@ -624,7 +640,6 @@ function screenShare() {
 	});
 
 	$("#buttonScreenShare").prop("disabled", false);
-	*/
 }
 
 function showLocalCamera() {
@@ -633,20 +648,35 @@ function showLocalCamera() {
 	$('#buttonScreenShare').addClass("btn-success");
 	$('#buttonScreenShare').attr("value", "Screen Share");
 
-	// var publisher = OV.initPublisher(undefined, {
-	// 	audioSource: undefined, // The source of audio. If undefined default microphone
-	// 	videoSource: undefined, // The source of video. If undefined default webcam
-	// 	publishAudio: true,  	// Whether you want to start publishing with your audio unmuted or not
-	// 	publishVideo: true,  	// Whether you want to start publishing with your video enabled or not
-	// 	resolution: '1280x720',  // The resolution of your video
-	// 	frameRate: 30,			// The frame rate of your video
-	// 	insertMode: 'APPEND',	// How the video is inserted in the target element 'video-container'
-	// 	mirror: false       	// Whether to mirror your local video or not
-	// });
+	session.unpublish(localPublisher);
+	var publisher = OV.initPublisher("local-video-div", {
+		audioSource: undefined, // The source of audio. If undefined default microphone
+		videoSource: undefined, // The source of video. If undefined default webcam
+		publishAudio: true,  	// Whether you want to start publishing with your audio unmuted or not
+		publishVideo: true,  	// Whether you want to start publishing with your video enabled or not
+		resolution: '1280x720',  // The resolution of your video
+		frameRate: 30,			// The frame rate of your video
+		insertMode: 'APPEND',	// How the video is inserted in the target element 'video-container'
+		mirror: false       	// Whether to mirror your local video or not
+	});
 
-	// session.unpublish(localPublisher);
-	// session.publish(publisher);
-	// localPublisher = publisher;
+	publisher.on('videoElementCreated', (event) => {
+		console.log(">>>>>>>streamCreated showLocalCamera", event);
+
+		var mainVideo = $('#main-video video').get(0);
+		$('#main-video').fadeOut("fast", () => {
+			// $('#main-video p.nickName').html(clientData);
+			// $('#main-video p.userName').html(serverData);
+			mainVideo.srcObject = event.element.srcObject;
+			$('#main-video').fadeIn("fast");
+		});
+
+		addClickListener(event.element);
+		$(event.element).prop('muted', true); // Mute local video
+	});
+
+	session.publish(publisher);
+	localPublisher = publisher;
 }
 
 function handleHandup() {
