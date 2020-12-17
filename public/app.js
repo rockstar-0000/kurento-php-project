@@ -14,7 +14,6 @@ var recording;
 var isConnectedSubscriber = false;
 var isOwner;
 
-
 //constants
 var serverName = "publisher1"
 var destSaveURL = "/var/record/";
@@ -29,11 +28,9 @@ var roomName = currentUrl.searchParams.get("room");
 var username = currentUrl.searchParams.get("username");
 
 sessionName = roomName !== null ? roomName : defaultRoomName;
-console.log("sessionName name", sessionName);
 if (username !== null) {
 	nickName = username;
 }
-console.log("userName", nickName);
 
 if (debugMode) {
 	mediaServerUrl = "192.168.136.161:4443";
@@ -61,7 +58,6 @@ function joinSession() {
 
 	// On every new Stream received...
 	session.on('streamCreated', (event) => {
-		console.log(">>>>>>>streamCreated Subscriber", event);
 		isConnectedSubscriber = true;
 		// Subscribe to the Stream to receive it
 		// HTML video will be appended to element with 'remote-video-container' id
@@ -83,8 +79,6 @@ function joinSession() {
 	});
 
 	session.on('publisherStartSpeaking', (event) => {
-		console.log('>>>>>publisherStartSpeaking event:', event);
-		console.log('>>>>>Publisher ' + event.connection.connectionId + ' start speaking');
 		var videoElement;
 		if ($("video[id*=" + event.connection.connectionId + "]")[0]) {
 			videoElement = $("video[id*=" + event.connection.connectionId + "]")[0];
@@ -130,7 +124,18 @@ function joinSession() {
 
 	// Receiver of the message (usually before calling 'session.connect')
 	session.on('signal:' + handupType, (event) => {
-		console.log(">>>>>> hand-up", event); // Message
+		var videoItem = $("div[id*=" + event.from.connectionId + "]")[0];
+		if (!videoItem) {
+			return;
+		}
+		
+		if (event.data === handUp) {
+			$(videoItem).children('.hand').attr('src', "./assets/image/hand.png");
+
+		}
+		else if (event.data === handDown) {
+			$(videoItem).children('.hand').attr('src', "");
+		}
 	});
 
 	getToken(sessionName).then(token => {
@@ -142,9 +147,6 @@ function joinSession() {
 
 				// var userName = $("#user").val();
 				var userName = serverName;
-				$('#session-title').text(sessionName);
-				$('#join').hide();
-				$('#session').show();
 
 				// Here we check somehow if the user has 'PUBLISHER' role before
 				// trying to publish its stream. Even if someone modified the client's code and
@@ -167,22 +169,17 @@ function joinSession() {
 
 					// When our HTML video has been added to DOM...
 					publisher.on('videoElementCreated', (event) => {
-						console.log(">>>>>>>streamCreated Publisher", event);
-						console.log(">>>>>>>streamCreated isOwner, isConnectedSubscriber", isOwner, isConnectedSubscriber);
 						if (isOwner == "yes") {
 							$("#buttonRecord").show();
-							console.log(">>>>>>>buttonRecord shown");
 						}
 						else {
 							if (isConnectedSubscriber) {//already created room.
 								$("#buttonRecord").hide();
 								isOwner = "no";
-								console.log(">>>>>>>buttonRecord hidden");
 							}
 							else {//first joined user on room.
 								$("#buttonRecord").show();
 								isOwner = "yes";
-								console.log(">>>>>>>buttonRecord shown");
 							}
 						}
 
@@ -237,7 +234,6 @@ function moveRecording(sessionName, destDir) {
 }
 
 function leaveSession() {
-
 	// --- 9) Leave the session by calling 'disconnect' method over the Session object ---
 
 	session.disconnect();
@@ -245,49 +241,6 @@ function leaveSession() {
 
 	// Removing all HTML elements with the user's nicknames
 	cleanSessionView();
-
-	$('#join').show();
-	$('#session').hide();
-}
-
-/* OPENVIDU METHODS */
-
-
-
-/* APPLICATION REST METHODS */
-
-function logIn() {
-	// var user = $("#user").val(); // Username
-	// var pass = $("#pass").val(); // Password
-	var user = serverName; // Username
-	var pass = "pass"; // Password
-
-	httpPostRequest(
-		'api-login/login',
-		{ user: user, pass: pass },
-		'Login WRONG',
-		(response) => {
-			$("#logged").show();
-			// $("#name-user").text(user);
-			// $("#not-logged").hide();
-			// Random nickName and session
-			// $("#sessionName").val("Session " + Math.floor(Math.random() * 10));
-			// $("#sessionName").val("room");
-			// $("#nickName").val("Participant " + Math.floor(Math.random() * 100));
-		}
-	);
-}
-
-function logOut() {
-	httpPostRequest(
-		'api-login/logout',
-		{},
-		'Logout WRONG',
-		(response) => {
-			// $("#not-logged").show();
-			// $("#logged").hide();
-		}
-	);
 }
 
 function getToken(mySessionId) {
@@ -391,12 +344,6 @@ function httpPostRequest(url, body, errorMsg, callback) {
 	}
 }
 
-/* APPLICATION REST METHODS */
-
-
-
-/* APPLICATION BROWSER METHODS */
-
 window.onbeforeunload = () => { // Gracefully leave session
 	if (session) {
 		removeUser();
@@ -422,8 +369,6 @@ function appendUserData(videoElement, connection) {
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
 			$('#main-video').fadeOut("fast", () => {
-				// $('#main-video p.nickName').html(clientData);
-				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
@@ -431,7 +376,6 @@ function appendUserData(videoElement, connection) {
 	} else { // Appending remote video data
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = serverName;
-		// serverData = JSON.parse(connection.data.split('%/%')[1]).serverData;
 		nodeId = connection.connectionId;
 		userTypeName = 'Remote';
 
@@ -449,9 +393,6 @@ function removeUserData(connection) {
 	if ($(userNameRemoved).find('p.userName').html() === $('#main-video p.userName').html()) {
 		cleanMainVideo(); // The participant focused in the main video has left
 	}
-	// $("#data-" + connection.connectionId).remove();
-
-	console.log(">>>>>>>>removeUserData", $(`div[id*="${connection.connectionId + "-div"}"]`));
 	$(`div[id*="${connection.connectionId + "-div"}"]`)[0].remove();
 }
 
@@ -476,8 +417,6 @@ function addClickListener(videoElement, clientData, serverData) {
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
 			$('#main-video').fadeOut("fast", () => {
-				// $('#main-video p.nickName').html(clientData);
-				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
@@ -507,7 +446,6 @@ function cleanSessionView() {
 }
 
 function clickedRecordingBtn() {
-	console.log(">>>>>>clickedRecordingBtn", isRecording);
 	$("#buttonRecord").prop("disabled", true);
 	if (isRecording) {
 		stopRecording();
@@ -519,8 +457,6 @@ function clickedRecordingBtn() {
 
 function startRecording() {
 	var sessionId = session.options.sessionId;
-	console.log(">>>>>>>>>startRecording", sessionId);
-	// var sessionId = sessionName;
 
 	$.ajax({
 		type: 'POST',
@@ -539,8 +475,6 @@ function startRecording() {
 
 function stopRecording() {
 	var sessionId = session.options.sessionId;
-	console.log(">>>>>>>>>stopRecording", sessionId);
-	// var sessionId = sessionName;
 
 	$.ajax({
 		type: 'POST',
@@ -604,24 +538,18 @@ function screenShare() {
 	$("#buttonScreenShare").prop("disabled", true);
 	var publisher = OV.initPublisher("local-video-div", { videoSource: "screen" });
 
-	// addClickListener(videoElement, "", "");
 	publisher.once('accessAllowed', (event) => {
 		session.unpublish(localPublisher);
 		localPublisher = publisher;
 		session.publish(publisher);
 
 		publisher.stream.getMediaStream().getVideoTracks()[0].addEventListener('ended', () => {
-			console.log('User pressed the "Stop sharing" button');
 			showLocalCamera();
 		});
 
 		publisher.on('videoElementCreated', (event) => {
-			console.log(">>>>>>>streamCreated screenShare", event);
-
 			var mainVideo = $('#main-video video').get(0);
 			$('#main-video').fadeOut("fast", () => {
-				// $('#main-video p.nickName').html(clientData);
-				// $('#main-video p.userName').html(serverData);
 				mainVideo.srcObject = event.element.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
@@ -661,12 +589,8 @@ function showLocalCamera() {
 	});
 
 	publisher.on('videoElementCreated', (event) => {
-		console.log(">>>>>>>streamCreated showLocalCamera", event);
-
 		var mainVideo = $('#main-video video').get(0);
 		$('#main-video').fadeOut("fast", () => {
-			// $('#main-video p.nickName').html(clientData);
-			// $('#main-video p.userName').html(serverData);
 			mainVideo.srcObject = event.element.srcObject;
 			$('#main-video').fadeIn("fast");
 		});
@@ -680,7 +604,6 @@ function showLocalCamera() {
 }
 
 function handleHandup() {
-	console.log(">>>>>clicked hand up", isHanup);
 	isHanup = !isHanup;
 	if (isHanup) {
 		$('#hand_img').attr("src", './assets/image/unhand.png');
@@ -704,7 +627,6 @@ function sendHandUp() {
 		type: handupType            // The type of message (optional)
 	})
 		.then(() => {
-			console.log('Message successfully sent');
 			$("#local-video-div .hand").attr('src', "./assets/image/hand.png");
 		})
 		.catch(error => {
@@ -720,7 +642,6 @@ function sendHandDown() {
 		type: handupType            // The type of message (optional)
 	})
 		.then(() => {
-			console.log('Message successfully sent');
 			$("#local-video-div .hand").attr('src', "");
 		})
 		.catch(error => {
@@ -729,18 +650,15 @@ function sendHandDown() {
 }
 
 window.onbeforeunload = function () {
-	console.log("onbeforeunload isOwner", isOwner);
 	sessionStorage.setItem("owner", isOwner);
 }
 
 window.onload = function () {
 	var valueOwner;
 	valueOwner = sessionStorage.getItem("owner");
-	console.log("sessionStorage valueOwner", valueOwner);
 
 	if (valueOwner !== null) {
 		isOwner = valueOwner;
-		console.log("isOwner", isOwner);
 	}
 }
 
@@ -751,6 +669,4 @@ function updateUrl() {
 }
 
 updateUrl();
-// logIn();
 joinSession();
-/* APPLICATION BROWSER METHODS */

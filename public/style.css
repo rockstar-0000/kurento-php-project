@@ -350,6 +350,10 @@ table i {
 	right: 10px;
 }
 
+#local-hand {
+	top: 30px;
+}
+
 .btn-toggle {
 	width: 130px;
     margin-right: 20px;

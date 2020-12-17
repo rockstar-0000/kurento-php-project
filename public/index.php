@@ -53,7 +53,7 @@
 						<div class="data-node" id="data-local">
 							<p class='nickName'></p>
 						</div>
-						<img class="hand" src="">
+						<img class="hand" id="local-hand" src="">
 					</div>
 					<div id="remote-video-container">
 					</div>
