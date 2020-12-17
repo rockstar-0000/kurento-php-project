@@ -267,9 +267,9 @@ function logIn() {
 		{ user: user, pass: pass },
 		'Login WRONG',
 		(response) => {
-			$("#name-user").text(user);
-			$("#not-logged").hide();
 			$("#logged").show();
+			// $("#name-user").text(user);
+			// $("#not-logged").hide();
 			// Random nickName and session
 			// $("#sessionName").val("Session " + Math.floor(Math.random() * 10));
 			// $("#sessionName").val("room");
@@ -279,15 +279,15 @@ function logIn() {
 }
 
 function logOut() {
-	// httpPostRequest(
-	// 	'api-login/logout',
-	// 	{},
-	// 	'Logout WRONG',
-	// 	(response) => {
-	// 		$("#not-logged").show();
-	// 		$("#logged").hide();
-	// 	}
-	// );
+	httpPostRequest(
+		'api-login/logout',
+		{},
+		'Logout WRONG',
+		(response) => {
+			// $("#not-logged").show();
+			// $("#logged").hide();
+		}
+	);
 }
 
 function getToken(mySessionId) {
@@ -402,7 +402,7 @@ window.onbeforeunload = () => { // Gracefully leave session
 		removeUser();
 		leaveSession();
 	}
-	// logOut();
+	logOut();
 }
 
 function appendUserData(videoElement, connection) {
@@ -751,6 +751,6 @@ function updateUrl() {
 }
 
 updateUrl();
-logIn();
+// logIn();
 joinSession();
 /* APPLICATION BROWSER METHODS */
