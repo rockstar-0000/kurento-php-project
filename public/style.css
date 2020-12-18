@@ -270,8 +270,17 @@ video {
 }
 
 #main-video {
+	display: flex;
+    position: relative;
     width: 100%;
 	height: calc(100vh - 50px);
+}
+
+#drawCanvas {
+    position: absolute;
+	width: 100%;
+	height: calc(100vh - 50px);
+	background: transparent;
 }
 
 #main-video video {
@@ -356,7 +365,16 @@ table i {
 
 .btn-toggle {
 	width: 130px;
-    margin-right: 20px;
+    margin-right: 10px;
+}
+
+.btn-middle-toggle {
+	width: 100px;
+    margin-right: 5px;
+}
+
+#hand_button{
+	margin-right: 10px;
 }
 
 #hand_img{

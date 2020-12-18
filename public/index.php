@@ -44,9 +44,13 @@
 					<button id="hand_button" class="btn btn-success" onclick="handleHandup()">
 						<img id="hand_img" src="./assets/image/hand.png" />
 					</button>
+					<button id="draw_start_button" class="btn btn-large btn-middle-toggle btn-success" onclick="drawBoard()">Start Draw</button>
+            		<button id="draw_stop_button" class="btn btn-large btn-middle-toggle btn-success" onclick="stopDraw()">Stop Draw</button>
+            		<button id="draw_clear_button" class="btn btn-large btn-middle-toggle btn-success" onclick="clearDraw()">Clear Draw</button>
 				</div>
 				<div id="main-video">
 					<video autoplay playsinline="true"></video>
+					<canvas id="drawCanvas">Canvas is not supported on this browser!</canvas>
 				</div>
 				<div id="video-container">
 					<div class='video-item-container' id="local-video-div">
@@ -62,6 +66,7 @@
 		</div>
 	</div>
 	<script src="app.js"></script>
+	<script src="./draw.js"></script>
 </body>
 <script type="module">
 
