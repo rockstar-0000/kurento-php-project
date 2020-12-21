@@ -3,7 +3,7 @@ var canvas = document.getElementById('drawCanvas');
 var ctx = canvas.getContext('2d');
 var color = "red";
 var lineWidth = '3';
-var isDrawFlag = false;
+var isDrawFlag = true;
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight * 0.9;
@@ -53,24 +53,23 @@ function clickedWhiteBoardBtn() {
 function drawBoard() {
     isDrawFlag = true;
     $('#draw_play_button').removeClass("btn-success");
-	$('#draw_play_button').addClass("btn-warning");
-    // $('#draw_play_button').attr("value", "Stop Draw");
+    $('#draw_play_button').addClass("btn-warning");
     $('#draw_play_button').text("Stop Draw");
-    startCanvasStream();
 }
 
 function stopDraw() {
     isDrawFlag = false;
     $('#draw_play_button').removeClass("btn-warning");
-	$('#draw_play_button').addClass("btn-success");
-    // $('#draw_play_button').attr("value", "Start Draw");
+    $('#draw_play_button').addClass("btn-success");
     $('#draw_play_button').text("Start Draw");
 }
 
 function clearDraw() {
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
+    sendClearDrawn();
 }
+
 /* Draw on canvas */
 
 function drawOnCanvas(color, plots) {
@@ -78,10 +77,122 @@ function drawOnCanvas(color, plots) {
     ctx.beginPath();
     ctx.moveTo(plots[0].x, plots[0].y);
 
+    sendColor(color);
+    startPlot(plots[0]);
     for (var i = 1; i < plots.length; i++) {
         ctx.lineTo(plots[i].x, plots[i].y);
+        sendPlot(plots[i]);
     }
     ctx.stroke();
+
+    endPlot();
+}
+
+function sendColor(color) {
+    // Sender of the message (after 'session.connect')
+    session.signal({
+        data: color,  // Any string (optional)
+        to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+        type: whitBoardColor            // The type of message (optional)
+    })
+        .then(() => {
+            console.log("send white board draw plots");
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+function startPlot(plot) {
+    session.signal({
+        data: plot.x + '-' + plot.y,  // Any string (optional)
+        to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+        type: whitBoardStart            // The type of message (optional)
+    })
+        .then(() => {
+            console.log("send white board draw plots");
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+function sendPlot(plot) {
+    session.signal({
+        data: plot.x + '-' + plot.y,  // Any string (optional)
+        to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+        type: whitBoardPlot            // The type of message (optional)
+    })
+        .then(() => {
+            console.log("send white board draw plots");
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+function endPlot() {
+    var emputy;
+    session.signal({
+        data: emputy,  // Any string (optional)
+        to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+        type: whitBoardEnd            // The type of message (optional)
+    })
+        .then(() => {
+            console.log("send white board draw plots");
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+function sendClearDrawn() {
+    var emputy;
+    session.signal({
+        data: emputy,  // Any string (optional)
+        to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
+        type: whitBoardClear           // The type of message (optional)
+    })
+        .then(() => {
+            console.log("send white board draw plots");
+        })
+        .catch(error => {
+            console.error(error);
+        });
+}
+
+function setDrawColor(message) {
+    ctx.strokeStyle = message;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = ctx.lineJoin = 'round';
+}
+
+function startDrawPlot(message) {
+    var res;
+    var x, y;
+    res = message.split("-");
+    x = parseInt(res[0]);
+    y = parseInt(res[1]);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+}
+
+function setDrawPlot(message) {
+    var res;
+    var x, y;
+    res = message.split("-");
+    x = parseInt(res[0]);
+    y = parseInt(res[1]);
+    ctx.lineTo(x, y);
+}
+
+function endDrawPlot() {
+    ctx.stroke();
+}
+
+function clearDrawPlot() {
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function drawFromStream(message) {

@@ -1,7 +1,7 @@
 var OV;
 var session;
 var localPublisher = null;
-var debugMode = false;
+var debugMode = true;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var token;			// Token retrieved from OpenVidu Server
@@ -13,6 +13,7 @@ var isHanup = false;
 var recording;
 var isConnectedSubscriber = false;
 var isOwner;
+var localUserId;
 
 //constants
 var serverName = "publisher1"
@@ -22,6 +23,11 @@ var nickName = "Participant" + Math.floor(Math.random() * 100);
 var handupType = "hand-up";
 var handUp = "HAND-UP";
 var handDown = "HAND-DOWN";
+var whitBoardColor = "draw-whiteboard-color";
+var whitBoardStart = "draw-whiteboard-start";
+var whitBoardPlot = "draw-whiteboard-plot";
+var whitBoardEnd = "draw-whiteboard-end";
+var whitBoardClear = "draw-whiteboard-clear";
 
 var currentUrl = new URL(window.location.href);
 var roomName = currentUrl.searchParams.get("room");
@@ -138,6 +144,46 @@ function joinSession() {
 		}
 	});
 
+	session.on('signal:' + whitBoardColor, (event) => {
+		console.log("white board whitBoardColor:", event);
+		if(localUserId == event.from.connectionId){
+			return;
+		}
+		setDrawColor(event.data);
+	});
+
+	session.on('signal:' + whitBoardStart, (event) => {
+		console.log("white board whitBoardStart:", event);
+		if(localUserId == event.from.connectionId){
+			return;
+		}
+		startDrawPlot(event.data);
+	});
+
+	session.on('signal:' + whitBoardPlot, (event) => {
+		console.log("white board whitBoardPlot:", event);
+		if(localUserId == event.from.connectionId){
+			return;
+		}
+		setDrawPlot(event.data);
+	});
+
+	session.on('signal:' + whitBoardEnd, (event) => {
+		console.log("white board whitBoardEnd:", event);
+		if(localUserId == event.from.connectionId){
+			return;
+		}
+		endDrawPlot();
+	});
+
+	session.on('signal:' + whitBoardClear, (event) => {
+		console.log("white board whitBoardClear:", event);
+		if(localUserId == event.from.connectionId){
+			return;
+		}
+		clearDrawPlot();
+	});
+
 	getToken(sessionName).then(token => {
 
 		session.connect(token, { clientData: nickName, serverData: serverName })
@@ -169,6 +215,7 @@ function joinSession() {
 
 					// When our HTML video has been added to DOM...
 					publisher.on('videoElementCreated', (event) => {
+						localUserId = event.target.session.connection.connectionId;
 						if (isOwner == "yes") {
 							$("#buttonRecord").show();
 						}
