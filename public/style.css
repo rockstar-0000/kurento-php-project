@@ -223,7 +223,8 @@ a:hover .demo-logo {
 	height: 50px;
     display: flex;
     justify-content: center;
-    align-items: center;
+	align-items: center;
+	z-index: 1;
 }
 
 #session-header form {

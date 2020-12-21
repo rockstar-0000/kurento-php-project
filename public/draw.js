@@ -4,7 +4,6 @@ var ctx = canvas.getContext('2d');
 var color = "red";
 var lineWidth = '3';
 var isDrawFlag = false;
-// var color = document.querySelector(':checked').getAttribute('data-color');
 
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight * 0.9;
@@ -14,11 +13,6 @@ ctx.lineWidth = lineWidth;
 ctx.lineCap = ctx.lineJoin = 'round';
 
 /* Mouse and touch events */
-
-// document.getElementById('colorSwatch').addEventListener('click', function() {
-// 	color = document.querySelector(':checked').getAttribute('data-color');
-// }, false);
-
 var isTouchSupported = 'ontouchstart' in window;
 var isPointerSupported = navigator.pointerEnabled;
 var isMSPointerSupported = navigator.msPointerEnabled;
@@ -47,17 +41,30 @@ function displayWindowSize() {
     context.lineWidth = lineWidth;
 }
 
+function clickedWhiteBoardBtn() {
+    if (isDrawFlag) {
+        stopDraw();
+    }
+    else {
+        drawBoard();
+    }
+}
+
 function drawBoard() {
     isDrawFlag = true;
-    $('#draw_start_button').attr('disabled', true);
-    $('#draw_stop_button').attr('disabled', false);
+    $('#draw_play_button').removeClass("btn-success");
+	$('#draw_play_button').addClass("btn-warning");
+    // $('#draw_play_button').attr("value", "Stop Draw");
+    $('#draw_play_button').text("Stop Draw");
     startCanvasStream();
 }
 
 function stopDraw() {
     isDrawFlag = false;
-    $('#draw_start_button').attr('disabled', false);
-    $('#draw_stop_button').attr('disabled', true);
+    $('#draw_play_button').removeClass("btn-warning");
+	$('#draw_play_button').addClass("btn-success");
+    // $('#draw_play_button').attr("value", "Start Draw");
+    $('#draw_play_button').text("Start Draw");
 }
 
 function clearDraw() {
