@@ -1,7 +1,7 @@
 var OV;
 var session;
 var localPublisher = null;
-var debugMode = true;
+var debugMode = false;
 var mediaServerUrl;
 var sessionName;	// Name of the video session the user will connect to
 var token;			// Token retrieved from OpenVidu Server
