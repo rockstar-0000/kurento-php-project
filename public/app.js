@@ -13,7 +13,9 @@ var isHanup = false;
 var recording;
 var isConnectedSubscriber = false;
 var isOwner;
-var localUserId;
+var localUser = {id: null, username: "", color: "red", plotsArray: []};
+var currentUser = {id: null, username: "", color: "red", plotsArray: []};
+var remoteUsers = [];
 
 //constants
 var serverName = "publisher1"
@@ -146,7 +148,7 @@ function joinSession() {
 
 	session.on('signal:' + whitBoardColor, (event) => {
 		console.log("white board whitBoardColor:", event);
-		if(localUserId == event.from.connectionId){
+		if(localUser.id == event.from.connectionId){
 			return;
 		}
 		setDrawColor(event.data);
@@ -154,7 +156,7 @@ function joinSession() {
 
 	session.on('signal:' + whitBoardStart, (event) => {
 		console.log("white board whitBoardStart:", event);
-		if(localUserId == event.from.connectionId){
+		if(localUser.id == event.from.connectionId){
 			return;
 		}
 		startDrawPlot(event.data);
@@ -162,7 +164,7 @@ function joinSession() {
 
 	session.on('signal:' + whitBoardPlot, (event) => {
 		console.log("white board whitBoardPlot:", event);
-		if(localUserId == event.from.connectionId){
+		if(localUser.id == event.from.connectionId){
 			return;
 		}
 		setDrawPlot(event.data);
@@ -170,7 +172,7 @@ function joinSession() {
 
 	session.on('signal:' + whitBoardEnd, (event) => {
 		console.log("white board whitBoardEnd:", event);
-		if(localUserId == event.from.connectionId){
+		if(localUser.id == event.from.connectionId){
 			return;
 		}
 		endDrawPlot();
@@ -178,7 +180,7 @@ function joinSession() {
 
 	session.on('signal:' + whitBoardClear, (event) => {
 		console.log("white board whitBoardClear:", event);
-		if(localUserId == event.from.connectionId){
+		if(localUser.id == event.from.connectionId){
 			return;
 		}
 		clearDrawPlot();
@@ -215,7 +217,7 @@ function joinSession() {
 
 					// When our HTML video has been added to DOM...
 					publisher.on('videoElementCreated', (event) => {
-						localUserId = event.target.session.connection.connectionId;
+						localUser.id = event.target.session.connection.connectionId;
 						if (isOwner == "yes") {
 							$("#buttonRecord").show();
 						}
@@ -420,6 +422,8 @@ function appendUserData(videoElement, connection) {
 				$('#main-video').fadeIn("fast");
 			});
 		}
+
+		localUser.username = clientData;
 	} else { // Appending remote video data
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = serverName;
@@ -467,6 +471,16 @@ function addClickListener(videoElement, clientData, serverData) {
 				mainVideo.srcObject = videoElement.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
+
+			//update plots along users:
+			console.log(">>>>>>clicked videoElement", videoElement.id);
+			console.log(">>>>>>contain local video", videoElement.id.includes("local-video"));
+			if(videoElement.id.includes("local-video") == true){//local video
+				reDrawPlot(localUser.color, localUser.plotsArray);
+			}
+			else {
+				reDrawPlot(localUser.color, []);
+			}
 		}
 	});
 }

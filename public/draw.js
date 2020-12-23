@@ -67,21 +67,22 @@ function stopDraw() {
 function clearDraw() {
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
+    localUser.plotsArray = [];
     sendClearDrawn();
 }
 
 /* Draw on canvas */
 
-function drawOnCanvas(color, plots) {
+function drawOnCanvas(color, userPlots) {
     ctx.strokeStyle = color;
     ctx.beginPath();
-    ctx.moveTo(plots[0].x, plots[0].y);
+    ctx.moveTo(userPlots[0].x, userPlots[0].y);
 
     sendColor(color);
-    startPlot(plots[0]);
-    for (var i = 1; i < plots.length; i++) {
-        ctx.lineTo(plots[i].x, plots[i].y);
-        sendPlot(plots[i]);
+    startPlot(userPlots[0]);
+    for (var i = 1; i < userPlots.length; i++) {
+        ctx.lineTo(userPlots[i].x, userPlots[i].y);
+        sendPlot(userPlots[i]);
     }
     ctx.stroke();
 
@@ -200,6 +201,29 @@ function drawFromStream(message) {
     drawOnCanvas(message.color, message.plots);
 }
 
+//redraw whiteboard when selected user changed.
+function reDrawPlot(color, plotsArray) {
+    clearDrawPlot();
+
+    ctx.strokeStyle = color;
+    for (var i = 0; i < plotsArray.length; i++) {
+        var userPlots = plotsArray[i];
+        ctx.beginPath();
+        ctx.moveTo(userPlots[0].x, userPlots[0].y);
+
+        sendColor(color);
+        startPlot(userPlots[0]);
+        for (var j = 1; j < userPlots.length; j++) {
+            ctx.lineTo(userPlots[j].x, userPlots[j].y);
+            sendPlot(userPlots[j]);
+        }
+        ctx.stroke();
+
+        endPlot();
+    }
+
+}
+
 var isActive = false;
 var plots = [];
 
@@ -209,8 +233,9 @@ function draw(e) {
 
     var x = isTouchSupported ? (e.targetTouches[0].pageX - canvas.offsetLeft) : (e.offsetX || e.layerX - canvas.offsetLeft);
     var y = isTouchSupported ? (e.targetTouches[0].pageY - canvas.offsetTop) : (e.offsetY || e.layerY - canvas.offsetTop);
-
-    plots.push({ x: (x << 0), y: (y << 0) }); // round numbers for touch screens
+    var point = { x: (x << 0), y: (y << 0) };
+    plots.push(point); // round numbers for touch screens
+    // localUser.plots.push(point);
 
     drawOnCanvas(color, plots);
 }
@@ -225,6 +250,8 @@ function startDraw(e) {
 function endDraw(e) {
     e.preventDefault();
     isActive = false;
+    localUser.plotsArray.push(plots);
+    console.log(">>>>>local user plots array", localUser.plotsArray);
     plots = [];
 }
 
