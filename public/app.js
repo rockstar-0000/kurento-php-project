@@ -13,6 +13,7 @@ var isHanup = false;
 var recording;
 var isConnectedSubscriber = false;
 var isOwner;
+var isLocalUserWhiteBoard=false;
 var localUser = {id: null, username: "", color: "red", plotsArray: []};
 var currentUser = {id: null, username: "", color: "red", plotsArray: []};
 var remoteUsers = [];
@@ -90,9 +91,11 @@ function joinSession() {
 		var videoElement;
 		if ($("video[id*=" + event.connection.connectionId + "]")[0]) {
 			videoElement = $("video[id*=" + event.connection.connectionId + "]")[0];
+			isLocalUserWhiteBoard = false;
 		}
 		else {
 			videoElement = $("video[id*=local]")[0];
+			isLocalUserWhiteBoard = true;
 		}
 
 		console.log('>>>>>Publisher Speak Element', videoElement);
@@ -237,6 +240,8 @@ function joinSession() {
 							nickName: nickName,
 							userName: userName
 						};
+
+						isLocalUserWhiteBoard = true;
 						initMainVideo(event.element, userData);
 						appendUserData(event.element, userData);
 						$(event.element).prop('muted', true); // Mute local video
@@ -473,12 +478,13 @@ function addClickListener(videoElement, clientData, serverData) {
 			});
 
 			//update plots along users:
-			console.log(">>>>>>clicked videoElement", videoElement.id);
-			console.log(">>>>>>contain local video", videoElement.id.includes("local-video"));
 			if(videoElement.id.includes("local-video") == true){//local video
+				isLocalUserWhiteBoard = true;
 				reDrawPlot(localUser.color, localUser.plotsArray);
+
 			}
 			else {
+				isLocalUserWhiteBoard = false;
 				reDrawPlot(localUser.color, []);
 			}
 		}
@@ -611,6 +617,7 @@ function screenShare() {
 		publisher.on('videoElementCreated', (event) => {
 			var mainVideo = $('#main-video video').get(0);
 			$('#main-video').fadeOut("fast", () => {
+				isLocalUserWhiteBoard = true;
 				mainVideo.srcObject = event.element.srcObject;
 				$('#main-video').fadeIn("fast");
 			});
@@ -652,6 +659,7 @@ function showLocalCamera() {
 	publisher.on('videoElementCreated', (event) => {
 		var mainVideo = $('#main-video video').get(0);
 		$('#main-video').fadeOut("fast", () => {
+			isLocalUserWhiteBoard = true;
 			mainVideo.srcObject = event.element.srcObject;
 			$('#main-video').fadeIn("fast");
 		});

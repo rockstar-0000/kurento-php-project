@@ -71,8 +71,7 @@ function clearDraw() {
     sendClearDrawn();
 }
 
-/* Draw on canvas */
-
+/* Draw on canvas and send points on whiteboard to other users */
 function drawOnCanvas(color, userPlots) {
     ctx.strokeStyle = color;
     ctx.beginPath();
@@ -89,6 +88,7 @@ function drawOnCanvas(color, userPlots) {
     endPlot();
 }
 
+/* send functions for whiteboard*/
 function sendColor(color) {
     // Sender of the message (after 'session.connect')
     session.signal({
@@ -162,6 +162,7 @@ function sendClearDrawn() {
         });
 }
 
+/* draw functions with whiteboard message sent*/
 function setDrawColor(message) {
     ctx.strokeStyle = message;
     ctx.lineWidth = lineWidth;
@@ -201,29 +202,31 @@ function drawFromStream(message) {
     drawOnCanvas(message.color, message.plots);
 }
 
-//redraw whiteboard when selected user changed.
+/*redraw whiteboard when selected user changed */
 function reDrawPlot(color, plotsArray) {
     clearDrawPlot();
 
     ctx.strokeStyle = color;
     for (var i = 0; i < plotsArray.length; i++) {
         var userPlots = plotsArray[i];
-        ctx.beginPath();
-        ctx.moveTo(userPlots[0].x, userPlots[0].y);
+        if (userPlots.length > 0) {
+            ctx.beginPath();
+            ctx.moveTo(userPlots[0].x, userPlots[0].y);
 
-        sendColor(color);
-        startPlot(userPlots[0]);
-        for (var j = 1; j < userPlots.length; j++) {
-            ctx.lineTo(userPlots[j].x, userPlots[j].y);
-            sendPlot(userPlots[j]);
+            sendColor(color);
+            startPlot(userPlots[0]);
+            for (var j = 1; j < userPlots.length; j++) {
+                ctx.lineTo(userPlots[j].x, userPlots[j].y);
+                sendPlot(userPlots[j]);
+            }
+            ctx.stroke();
+
+            endPlot();
         }
-        ctx.stroke();
-
-        endPlot();
     }
-
 }
 
+/* mouse event function*/
 var isActive = false;
 var plots = [];
 
@@ -242,7 +245,7 @@ function draw(e) {
 
 function startDraw(e) {
     e.preventDefault();
-    if (isDrawFlag === true) {
+    if (isDrawFlag === true && isLocalUserWhiteBoard == true) {
         isActive = true;
     }
 }
