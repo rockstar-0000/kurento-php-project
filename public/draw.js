@@ -97,7 +97,6 @@ function sendColor(color) {
         type: whitBoardColor            // The type of message (optional)
     })
         .then(() => {
-            console.log("send white board draw plots");
         })
         .catch(error => {
             console.error(error);
@@ -110,8 +109,7 @@ function startPlot(plot) {
         to: [],                     // Array of Connection objects (optional. Broadcast to everyone if empty)
         type: whitBoardStart            // The type of message (optional)
     })
-        .then(() => {
-            console.log("send white board draw plots");
+        .then(() => {            
         })
         .catch(error => {
             console.error(error);
@@ -125,7 +123,6 @@ function sendPlot(plot) {
         type: whitBoardPlot            // The type of message (optional)
     })
         .then(() => {
-            console.log("send white board draw plots");
         })
         .catch(error => {
             console.error(error);
@@ -140,7 +137,6 @@ function endPlot() {
         type: whitBoardEnd            // The type of message (optional)
     })
         .then(() => {
-            console.log("send white board draw plots");
         })
         .catch(error => {
             console.error(error);
@@ -155,7 +151,6 @@ function sendClearDrawn() {
         type: whitBoardClear           // The type of message (optional)
     })
         .then(() => {
-            console.log("send white board draw plots");
         })
         .catch(error => {
             console.error(error);
@@ -163,33 +158,69 @@ function sendClearDrawn() {
 }
 
 /* draw functions with whiteboard message sent*/
-function setDrawColor(message) {
-    ctx.strokeStyle = message;
-    ctx.lineWidth = lineWidth;
-    ctx.lineCap = ctx.lineJoin = 'round';
+function setDrawColor(remoteUserId, message) {
+    if (currentUser.id == remoteUserId) {
+        ctx.strokeStyle = message;
+        ctx.lineWidth = lineWidth;
+        ctx.lineCap = ctx.lineJoin = 'round';
+    }
+
+    for(var i=0; i<remoteUserList.length; i++){
+        if(remoteUserList[i].id == remoteUserId){
+            remoteUserList[i].color = message;
+            break;
+        }
+    }
 }
 
-function startDrawPlot(message) {
+function startDrawPlot(remoteUserId, message) {
     var res;
     var x, y;
     res = message.split("-");
     x = parseInt(res[0]);
     y = parseInt(res[1]);
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    if (currentUser.id == remoteUserId) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    }
+
+    for(var i=0; i<remoteUserList.length; i++){
+        if(remoteUserList[i].id == remoteUserId){
+            var startPlots = [];
+            var point = { x: (x << 0), y: (y << 0) };
+            startPlots.push(point);
+            remoteUserList[i].plotsArray.push(startPlots);
+            break;
+        }
+    }
 }
 
-function setDrawPlot(message) {
+function setDrawPlot(remoteUserId, message) {
     var res;
     var x, y;
     res = message.split("-");
     x = parseInt(res[0]);
     y = parseInt(res[1]);
-    ctx.lineTo(x, y);
+    if (currentUser.id == remoteUserId) {
+        ctx.lineTo(x, y);
+    }
+
+    for(var i=0; i<remoteUserList.length; i++){
+        if(remoteUserList[i].id == remoteUserId){
+            var point = { x: (x << 0), y: (y << 0) };
+            var lastIndex = remoteUserList[i].plotsArray.length - 1;
+            if(lastIndex >= 0){
+                remoteUserList[i].plotsArray[lastIndex].push(point);
+            }
+            break;
+        }
+    }
 }
 
-function endDrawPlot() {
-    ctx.stroke();
+function endDrawPlot(remoteUserId) {
+    if (currentUser.id == remoteUserId) {
+        ctx.stroke();
+    }
 }
 
 function clearDrawPlot() {
@@ -213,15 +244,10 @@ function reDrawPlot(color, plotsArray) {
             ctx.beginPath();
             ctx.moveTo(userPlots[0].x, userPlots[0].y);
 
-            sendColor(color);
-            startPlot(userPlots[0]);
             for (var j = 1; j < userPlots.length; j++) {
                 ctx.lineTo(userPlots[j].x, userPlots[j].y);
-                sendPlot(userPlots[j]);
             }
             ctx.stroke();
-
-            endPlot();
         }
     }
 }
@@ -254,7 +280,6 @@ function endDraw(e) {
     e.preventDefault();
     isActive = false;
     localUser.plotsArray.push(plots);
-    console.log(">>>>>local user plots array", localUser.plotsArray);
     plots = [];
 }
 

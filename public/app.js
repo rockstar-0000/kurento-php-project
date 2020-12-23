@@ -13,10 +13,10 @@ var isHanup = false;
 var recording;
 var isConnectedSubscriber = false;
 var isOwner;
-var isLocalUserWhiteBoard=false;
-var localUser = {id: null, username: "", color: "red", plotsArray: []};
-var currentUser = {id: null, username: "", color: "red", plotsArray: []};
-var remoteUsers = [];
+var isLocalUserWhiteBoard = false;
+var localUser = { id: null, username: "", color: "red", plotsArray: [] };
+var currentUser;
+var remoteUserList = [];
 
 //constants
 var serverName = "publisher1"
@@ -75,7 +75,6 @@ function joinSession() {
 
 		// When the HTML video has been appended to DOM...
 		subscriber.on('videoElementCreated', (event) => {
-
 			// Add a new HTML element for the user's name and nickname over its video
 			appendUserData(event.element, subscriber.stream.connection);
 		});
@@ -98,7 +97,7 @@ function joinSession() {
 			isLocalUserWhiteBoard = true;
 		}
 
-		console.log('>>>>>Publisher Speak Element', videoElement);
+		console.log('>>>>>Publisher Speak Element', event.connection.connectionId);
 
 		var mainVideo = $('#main-video video').get(0);
 		if (mainVideo.srcObject !== videoElement.srcObject) {
@@ -107,6 +106,8 @@ function joinSession() {
 				$('#main-video').fadeIn("fast");
 			});
 		}
+
+		setCurrentUser(event.connection.connectionId);
 	});
 
 	session.on('publisherStopSpeaking', (event) => {
@@ -114,7 +115,6 @@ function joinSession() {
 	});
 
 	session.on('recordingStarted', (event) => {
-		console.log(">>>>>>>recordingStarted: ", event);
 		$('#buttonRecord').removeClass("btn-success");
 		$('#buttonRecord').addClass("btn-danger");
 		$('#buttonRecord').attr("value", "Stop Recording");
@@ -123,7 +123,6 @@ function joinSession() {
 	});
 
 	session.on('recordingStopped', (event) => {
-		console.log(">>>>>>recordingStopped: ", event.id);
 		moveRecording(event.id, destSaveURL);
 
 		$('#buttonRecord').removeClass("btn-danger");
@@ -139,7 +138,7 @@ function joinSession() {
 		if (!videoItem) {
 			return;
 		}
-		
+
 		if (event.data === handUp) {
 			$(videoItem).children('.hand').attr('src', "./assets/image/hand.png");
 
@@ -150,40 +149,35 @@ function joinSession() {
 	});
 
 	session.on('signal:' + whitBoardColor, (event) => {
-		console.log("white board whitBoardColor:", event);
-		if(localUser.id == event.from.connectionId){
+		if (localUser.id == event.from.connectionId) {
 			return;
 		}
-		setDrawColor(event.data);
+		setDrawColor(event.from.connectionId, event.data);
 	});
 
 	session.on('signal:' + whitBoardStart, (event) => {
-		console.log("white board whitBoardStart:", event);
-		if(localUser.id == event.from.connectionId){
+		if (localUser.id == event.from.connectionId) {
 			return;
 		}
-		startDrawPlot(event.data);
+		startDrawPlot(event.from.connectionId, event.data);
 	});
 
 	session.on('signal:' + whitBoardPlot, (event) => {
-		console.log("white board whitBoardPlot:", event);
-		if(localUser.id == event.from.connectionId){
+		if (localUser.id == event.from.connectionId) {
 			return;
 		}
-		setDrawPlot(event.data);
+		setDrawPlot(event.from.connectionId, event.data);
 	});
 
 	session.on('signal:' + whitBoardEnd, (event) => {
-		console.log("white board whitBoardEnd:", event);
-		if(localUser.id == event.from.connectionId){
+		if (localUser.id == event.from.connectionId) {
 			return;
 		}
-		endDrawPlot();
+		endDrawPlot(event.from.connectionId,);
 	});
 
 	session.on('signal:' + whitBoardClear, (event) => {
-		console.log("white board whitBoardClear:", event);
-		if(localUser.id == event.from.connectionId){
+		if (localUser.id == event.from.connectionId) {
 			return;
 		}
 		clearDrawPlot();
@@ -220,7 +214,7 @@ function joinSession() {
 
 					// When our HTML video has been added to DOM...
 					publisher.on('videoElementCreated', (event) => {
-						localUser.id = event.target.session.connection.connectionId;
+						localUser.id = event.target.stream.connection.connectionId;
 						if (isOwner == "yes") {
 							$("#buttonRecord").show();
 						}
@@ -428,7 +422,11 @@ function appendUserData(videoElement, connection) {
 			});
 		}
 
+		//save local user info
 		localUser.username = clientData;
+
+		//set current user id as local user id
+		setCurrentUser(localUser.id);
 	} else { // Appending remote video data
 		clientData = JSON.parse(connection.data.split('%/%')[0]).clientData;
 		serverData = serverName;
@@ -440,6 +438,12 @@ function appendUserData(videoElement, connection) {
 		dataNode.id = "data-" + nodeId;
 		dataNode.innerHTML = "<p class='nickName'>" + clientData + "</p>";
 		videoElement.parentNode.append(dataNode);
+
+		//save remote user info
+		var remoteUser = { id: null, username: "", color: "red", plotsArray: [] };
+		remoteUser.id = connection.connectionId;
+		remoteUser.username = clientData;
+		remoteUserList.push(remoteUser);
 	}
 	addClickListener(videoElement, clientData, serverData);
 }
@@ -450,6 +454,18 @@ function removeUserData(connection) {
 		cleanMainVideo(); // The participant focused in the main video has left
 	}
 	$(`div[id*="${connection.connectionId + "-div"}"]`)[0].remove();
+
+	//remove reomote user info
+	var index = -1;
+	for (var i = 0; i < remoteUserList.length; i++) {
+		if (remoteUserList[i].id == connection.connectionId) {
+			index = i;
+			break;
+		}
+	}
+	if (index != -1) {
+		remoteUserList.splice(index, 1);
+	}
 }
 
 function removeAllUserData() {
@@ -466,6 +482,9 @@ function cleanMainVideo() {
 	videoElement = $("#local-video-div video")[0];
 	$('#main-video video').get(0).srcObject = videoElement.srcObject;
 	$('#main-video').fadeIn("fast");
+
+	//set current user id as local user id
+	setCurrentUser(localUser.id);
 }
 
 function addClickListener(videoElement, clientData, serverData) {
@@ -478,14 +497,22 @@ function addClickListener(videoElement, clientData, serverData) {
 			});
 
 			//update plots along users:
-			if(videoElement.id.includes("local-video") == true){//local video
+			if (videoElement.id.includes("local-video") == true) {//local video
 				isLocalUserWhiteBoard = true;
 				reDrawPlot(localUser.color, localUser.plotsArray);
-
+				//set current user id as local user id
+				setCurrentUser(localUser.id);
 			}
 			else {
 				isLocalUserWhiteBoard = false;
-				reDrawPlot(localUser.color, []);
+				for (var i = 0; i < remoteUserList.length; i++) {
+					if (videoElement.id.includes(remoteUserList[i].id) == true) {
+						reDrawPlot(remoteUserList[i].color, remoteUserList[i].plotsArray);
+						//set current user id as remote user
+						setCurrentUser(remoteUserList[i].id);
+						break;
+					}
+				}
 			}
 		}
 	});
@@ -624,6 +651,9 @@ function screenShare() {
 
 			addClickListener(event.element);
 			$(event.element).prop('muted', true); // Mute local video
+
+			//set current user as local user
+			setCurrentUser(localUser.id);
 		});
 	});
 
@@ -666,6 +696,9 @@ function showLocalCamera() {
 
 		addClickListener(event.element);
 		$(event.element).prop('muted', true); // Mute local video
+
+		//set current user as local user
+		setCurrentUser(localUser.id);
 	});
 
 	session.publish(publisher);
@@ -716,6 +749,16 @@ function sendHandDown() {
 		.catch(error => {
 			console.error(error);
 		});
+}
+
+/* set current user with user id*/
+function setCurrentUser(currentUserId) {
+	currentUser = localUser;
+	for (var i = 0; i < remoteUserList.length; i++) {
+		if (remoteUserList[i].id == currentUserId) {
+			currentUser = remoteUserList[i];
+		}
+	}
 }
 
 window.onbeforeunload = function () {
